@@ -154,6 +154,10 @@ jobs:
         run: |
           found=0
           for f in $(find scripts/ -name "*.py" -type f); do
+            # 排除安全审计脚本本身（包含检测模式的正则定义）
+            case "$(basename $f)" in
+              audit_plugin.py|security_check.py|quality_report.py|evaluate_plugin_artifact.py) continue ;;
+            esac
             if grep -qE "(api_key|secret|password|token)\s*=\s*['\"][^'\"]+['\"]" "$f"; then
               echo "❌ Potential hardcoded secret in: $f"
               found=1
@@ -206,7 +210,10 @@ jobs:
 
       - name: Client conformance test
         run: |
-          python3 scripts/run_client_conformance.py examples/minimal-skill-only
+          python3 scripts/run_client_conformance.py \
+            --plugin examples/minimal-skill-only \
+            --client claude \
+            --output /tmp/client-conformance.json
           echo "✅ Client conformance test passed"
 
   version-check:

@@ -2,9 +2,10 @@
 from __future__ import annotations
 import argparse, asyncio, json, statistics, time
 from pathlib import Path
-from mcp import ClientSession, StdioServerParameters
-from mcp.client.stdio import stdio_client
+
 async def main_async(a):
+    from mcp import ClientSession, StdioServerParameters
+    from mcp.client.stdio import stdio_client
     params=StdioServerParameters(command=a.command,args=[str(a.server)],cwd=str(a.cwd or a.server.parent))
     async with stdio_client(params) as (read,write):
         async with ClientSession(read,write) as s:
