@@ -1,0 +1,11 @@
+{
+  "ORD-7001": {
+    "id": "ORD-7001",
+    "customer": "Example Buyer",
+    "status": "delivered",
+    "paid_amount": 120.0,
+    "currency": "USD",
+    "prior_refund": 0.0,
+    "return_window_open": true
+  }
+}

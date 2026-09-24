@@ -1,0 +1,17 @@
+{
+  "name": "agent-plugin-creator",
+  "version": "1.4.0",
+  "spec_version": "1.0.0",
+  "license": "MIT",
+  "author": {
+    "name": "agent-plugin-creator contributors"
+  },
+  "created": "2026-09-17",
+  "source": "https://github.com/agentplugins/agent-plugins-spec",
+  "vendor": {
+    "skill_creator": "official/skill-creator/",
+    "mcp_builder": "official/mcp-builder/"
+  },
+  "description": "创建符合 Agent Plugins 1.0.0 开放规范的可移植插件包",
+  "last_updated": "2026-09-24"
+}

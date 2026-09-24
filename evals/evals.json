@@ -1,0 +1,40 @@
+{
+  "skill_name": "agent-plugin-creator",
+  "evals": [
+    {
+      "id": 1,
+      "name": "portable-skill-only-plugin",
+      "prompt": "创建一个 Agent Plugins 1.0.0 插件，包含一个用于审查 API 文档的 Agent Skill，不需要 MCP。输出完整目录、plugin.json、skills/api-review/SKILL.md、验证结果和兼容性说明。",
+      "expected_output": "只生成合法 plugin.json 与 skills/api-review/SKILL.md；Skill 名称与目录匹配；不生成无必要的 mcp.json；通过静态验证。",
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "mcp-backed-plugin",
+      "prompt": "创建一个 Agent Plugins 1.0.0 插件，提供一个本地 stdio MCP server，用于查询项目文档，并配套一个指导模型调用工具的 Skill。要求采用官方 mcp-builder 的工具设计、错误处理和评估流程，并生成根 mcp.json。",
+      "expected_output": "同时生成便携 Skill 与根 mcp.json；command 是单一 token；路径和 schema 合法；报告工具设计、认证、测试和至少 10 个只读评估问题。",
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "legacy-plugin-migration",
+      "prompt": "把一个包含 skills、MCP、hooks、commands 和自定义 agent 的旧客户端插件迁移到 Agent Plugins 1.0.0，同时保留旧客户端兼容性。请逐项映射文件、生成便携核心，并说明哪些内容只能放客户端扩展或兼容层。",
+      "expected_output": "采用增量迁移；不把 hooks、commands、agents 放入便携 manifest；生成迁移映射、验证结果、客户端限制和删除旧文件前的测试要求。",
+      "files": []
+    },
+    {
+      "id": 4,
+      "name": "reverse-wrap-plugin-to-skill",
+      "prompt": "将一个包含 Skill + Python MCP 服务器的 Agent Plugin 反向封装为普通 Skill，使其可以在不支持 Agent Plugin 的平台上使用。要求生成封装层 SKILL.md、保留子技能、生成 start_mcp.py 启动脚本，并通过 official quick_validate 验证。",
+      "expected_output": "生成封装层 SKILL.md（含路由表、MCP 使用指南、Gotchas）；子技能完整保留；start_mcp.py 支持 --list/--info/--server 三种模式；metadata.wrapper-version 与技能版本一致；official quick_validate 验证通过。",
+      "files": []
+    },
+    {
+      "id": 5,
+      "name": "multi-client-adapter",
+      "prompt": "为一个 Agent Plugin 生成 5 个客户端（Claude Code/Codex/Copilot/Cursor/Gemini）的适配扩展，并验证兼容性。要求使用 client_adapter.py 的 --check 和 --generate 模式，输出每个客户端的适配文件清单。",
+      "expected_output": "--check 模式报告所有客户端兼容状态；--generate 模式生成 .claude-plugin/、.codex-plugin/、com.github.copilot/、.cursor/rules/、.gemini/ 目录；Cursor 规则从 skills 自动转换；适配文件不修改插件核心内容。",
+      "files": []
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# 测试和临时文件
+/tmp/
+*.tmp
+*.log
+
+# 生成的报告文件
+release-audit.json
+quality.json
+quality.md
+build-manifest.json
+trigger-results.json
+selection-results.json
+edge-results.json
+benchmark-results.json
+trigger_eval_judged.json
+release-decision.json
+repair-plan.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 环境变量
+.env
+.env.local
+.env.*.local
+
+# 备份
+*.bak
+*.backup

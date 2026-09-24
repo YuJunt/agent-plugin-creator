@@ -1,0 +1,14 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+  "mcpServers": {
+    "devops-tools": {
+      "transport": "stdio",
+      "command": "npx",
+      "args": [
+        "tsx",
+        "${PLUGIN_ROOT}/servers/devops-tools/src/server.ts"
+      ],
+      "type": "stdio"
+    }
+  }
+}

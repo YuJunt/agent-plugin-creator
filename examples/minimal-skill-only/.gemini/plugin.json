@@ -1,0 +1,11 @@
+{
+  "name": "minimal-skill-only",
+  "description": "最小化纯 Skill 插件示例，展示 Agent Plugins 1.0.0 最简结构",
+  "version": "1.0.0",
+  "skills": [
+    {
+      "name": "code-reviewer",
+      "path": "../skills/code-reviewer"
+    }
+  ]
+}

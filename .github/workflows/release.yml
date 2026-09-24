@@ -1,0 +1,106 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g. 1.3.0)'
+        required: true
+
+jobs:
+  release:
+    name: Build & Publish Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+
+      - name: Determine version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Pre-release validation
+        run: |
+          echo "=== Running pre-release checks ==="
+          
+          # 1. Skill validation
+          python3 scripts/validate_skill.py .
+          
+          # 2. Official validation
+          python3 official/skill-creator/scripts/quick_validate.py .
+          
+          # 3. Release audit
+          python3 scripts/release_audit.py .
+          
+          # 4. Version consistency
+          skill_ver=$(grep -oP '>\s*\*\*版本\*\*:\s*v?\K[\d.]+' SKILL.md)
+          prov_ver=$(python3 -c "import json; print(json.load(open('provenance.json'))['version'])")
+          if [ "$skill_ver" != "$prov_ver" ]; then
+            echo "❌ Version mismatch: SKILL.md=$skill_ver, provenance=$prov_ver"
+            exit 1
+          fi
+          
+          echo "✅ All pre-release checks passed"
+
+      - name: Build release package
+        run: |
+          mkdir -p dist
+          python3 scripts/build_release.py . dist/agent-plugin-creator-v${{ steps.version.outputs.version }}.zip
+          
+          # Also create a simple zip for direct download
+          cd ..
+          zip -r agent-plugin-creator/dist/agent-plugin-creator-v${{ steps.version.outputs.version }}-portable.zip \
+            agent-plugin-creator/ \
+            -x "*/__pycache__/*" \
+            -x "*.pyc" \
+            -x "*/release-audit.json" \
+            -x "*/quality.json" \
+            -x "*/.git/*"
+          cd agent-plugin-creator
+          
+          ls -lh dist/
+
+      - name: Generate release notes
+        run: |
+          python3 -c "
+          import re
+          content = open('CHANGELOG.md').read()
+          # Extract the latest version section
+          match = re.search(r'## \[[\d.]+\].*?(?=## \[|\Z)', content, re.DOTALL)
+          if match:
+              print(match.group(0))
+          " > release-notes.md
+          cat release-notes.md
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: Release v${{ steps.version.outputs.version }}
+          body_path: release-notes.md
+          files: |
+            dist/agent-plugin-creator-v${{ steps.version.outputs.version }}.zip
+            dist/agent-plugin-creator-v${{ steps.version.outputs.version }}-portable.zip
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-v${{ steps.version.outputs.version }}
+          path: dist/

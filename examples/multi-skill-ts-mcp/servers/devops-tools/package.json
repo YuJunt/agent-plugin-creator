@@ -1,0 +1,17 @@
+{
+  "name": "devops-tools-mcp",
+  "version": "1.0.0",
+  "description": "DevOps 工具 MCP 服务器示例",
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/server.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "tsx": "^4.7.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "@types/node": "^20.11.0"
+  }
+}

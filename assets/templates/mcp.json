@@ -1,0 +1,21 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+  "mcpServers": {
+    "local-server": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-name"],
+      "env": {
+        "LOG_LEVEL": "info"
+      },
+      "cwd": "${PLUGIN_ROOT}"
+    },
+    "remote-server": {
+      "type": "streamable-http",
+      "url": "https://api.example.com/mcp",
+      "headers": {
+        "X-Service": "agent-plugin"
+      }
+    }
+  }
+}

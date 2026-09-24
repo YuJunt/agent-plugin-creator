@@ -1,0 +1,31 @@
+{
+  "tools": [
+    {
+      "name": "get_order",
+      "classification": "read-only",
+      "side_effects": false,
+      "requires_user_confirmation": false,
+      "input_schema": {"type":"object","properties":{"order_id":{"type":"string"}},"required":["order_id"],"additionalProperties":false},
+      "output_schema": {"type":"object","properties":{"id":{"type":"string"},"status":{"type":"string"},"paid_amount":{"type":"number"},"prior_refund":{"type":"number"}},"required":["id","status","paid_amount","prior_refund"],"additionalProperties":true},
+      "errors": ["order_not_found"]
+    },
+    {
+      "name": "prepare_refund",
+      "classification": "prepare",
+      "side_effects": false,
+      "requires_user_confirmation": false,
+      "idempotency": {"required": true, "key_fields":["order_id","amount","reason"]},
+      "errors": ["order_not_found","amount_out_of_bounds","return_window_closed"]
+    },
+    {
+      "name": "execute_refund",
+      "classification": "irreversible-write",
+      "side_effects": true,
+      "requires_user_confirmation": true,
+      "idempotency": {"required": true, "key_fields":["order_id","amount","reason"]},
+      "confirmation": {"required_fields":["confirmation_token","user_confirmed"]},
+      "audit": {"required_fields":["audit_id","order_id","amount","reason"]},
+      "errors": ["explicit_confirmation_required","invalid_confirmation_token","duplicate_idempotency_key","order_not_found"]
+    }
+  ]
+}
