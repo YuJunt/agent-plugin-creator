@@ -1,0 +1,33 @@
+# 这些是 CODEOWNERS 的默认所有者。
+# 当有人提交修改这些文件的 PR 时，这些所有者将被自动请求审查。
+
+# 全局默认所有者
+* @YuJunt
+
+# 核心脚本
+/scripts/ @YuJunt
+/scripts/validate_plugin.py @YuJunt
+/scripts/audit_plugin.py @YuJunt
+/scripts/create_mcp_server.py @YuJunt
+/scripts/plugin_to_skill.py @YuJunt
+
+# 技能主文件
+/SKILL.md @YuJunt
+
+# 官方资源（只读，不建议修改）
+/official/ @YuJunt
+
+# 文档
+/README.md @YuJunt
+/CONTRIBUTING.md @YuJunt
+/INSTALL.md @YuJunt
+/CHANGELOG.md @YuJunt
+/SECURITY.md @YuJunt
+/CODE_OF_CONDUCT.md @YuJunt
+
+# CI/CD
+/.github/workflows/ @YuJunt
+
+# 模板
+/.github/ISSUE_TEMPLATE/ @YuJunt
+/.github/PULL_REQUEST_TEMPLATE.md @YuJunt
