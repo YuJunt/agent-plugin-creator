@@ -1,0 +1,9 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "multi-skill-ts-mcp",
+  "version": "1.0.0",
+  "description": "多 Skill + TypeScript MCP 服务器示例，展示复杂插件结构和 TS 技术栈",
+  "author": {"name": "agent-plugin-creator"},
+  "license": "MIT",
+  "keywords": ["example", "multi-skill", "typescript", "mcp", "devops"]
+}

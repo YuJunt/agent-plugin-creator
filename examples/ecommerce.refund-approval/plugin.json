@@ -1,0 +1,10 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "ecommerce.refund-approval",
+  "version": "1.0.0",
+  "description": "Review refund eligibility and execute only explicitly confirmed, auditable refund actions.",
+  "author": {
+    "name": "Regression Test Team"
+  },
+  "license": "MIT"
+}

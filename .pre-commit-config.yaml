@@ -1,0 +1,74 @@
+# Pre-commit hooks for Agent Plugin Creator
+# 安装: pip install pre-commit && pre-commit install
+
+repos:
+  - repo: local
+    hooks:
+      - id: python-syntax-check
+        name: Python Syntax Check
+        entry: python3 -m py_compile
+        language: system
+        types: [python]
+        files: ^scripts/.*\.py$
+
+      - id: skill-validation
+        name: Skill Validation
+        entry: python3 scripts/validate_skill.py
+        language: system
+        pass_filenames: false
+        files: ^(SKILL\.md|scripts/.*\.py|references/.*)$
+
+      - id: security-audit
+        name: Security Audit
+        entry: python3 scripts/audit_plugin.py
+        language: system
+        pass_filenames: false
+        args: [".", "--severity", "high"]
+        files: ^(scripts/|SKILL\.md|plugin\.json|mcp\.json)$
+
+      - id: no-hardcoded-secrets
+        name: No Hardcoded Secrets
+        entry: bash -c '
+          found=0
+          for f in $(git diff --cached --name-only --diff-filter=ACM | grep -E "\.(py|js|ts|json|md)$"); do
+            if grep -qE "(api_key|secret|password|token|private_key)\s*[:=]\s*[\"'\''][^\"'\'']{8,}[\"'\'']" "$f" 2>/dev/null; then
+              echo "❌ Potential hardcoded secret in: $f"
+              found=1
+            fi
+          done
+          if [ "$found" -eq 0 ]; then
+            echo "✅ No hardcoded secrets found"
+          else
+            exit 1
+          fi
+        '
+        language: system
+        pass_filenames: false
+
+      - id: version-consistency
+        name: Version Consistency Check
+        entry: bash -c '
+          skill_ver=$(grep -oP ">\s*\*\*版本\*\*:\s*v?\K[\d.]+" SKILL.md 2>/dev/null || echo "unknown")
+          prov_ver=$(python3 -c "import json; print(json.load(open(\"provenance.json\"))[\"version\"])" 2>/dev/null || echo "unknown")
+          changelog_ver=$(grep -oP "##\s*\[\K[\d.]+" CHANGELOG.md 2>/dev/null | head -1 || echo "unknown")
+          
+          echo "SKILL.md: v$skill_ver"
+          echo "provenance.json: v$prov_ver"
+          echo "CHANGELOG.md: v$changelog_ver"
+          
+          if [ "$skill_ver" != "$prov_ver" ] || [ "$skill_ver" != "$changelog_ver" ]; then
+            echo "❌ Version mismatch!"
+            exit 1
+          fi
+          echo "✅ Version consistency verified"
+        '
+        language: system
+        pass_filenames: false
+        files: ^(SKILL\.md|provenance\.json|CHANGELOG\.md)$
+
+      - id: eval-tests
+        name: Evaluation Tests
+        entry: python3 scripts/run_trigger_eval.py --skill . --output /tmp/trigger-eval.json
+        language: system
+        pass_filenames: false
+        files: ^(SKILL\.md|evals/|scripts/run_.*\.py)$

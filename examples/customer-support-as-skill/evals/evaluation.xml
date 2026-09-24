@@ -1,0 +1,1 @@
+<evaluation><qa_pair><question>Which open ticket is critical?</question><answer>TCK-2001</answer></qa_pair><qa_pair><question>Which tickets are near SLA risk?</question><answer>TCK-2001 and TCK-2002</answer></qa_pair><qa_pair><question>Does the server expose write operations?</question><answer>No</answer></qa_pair></evaluation>

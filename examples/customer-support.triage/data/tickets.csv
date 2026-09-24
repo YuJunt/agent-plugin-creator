@@ -1,0 +1,4 @@
+id,customer,severity,status,created_date,sla_hours,owner,summary
+TCK-2001,Acme Cloud,critical,open,2026-08-16T04:00:00,24,Support-A,Production login failures
+TCK-2002,Northstar Bank,high,open,2026-08-15T10:00:00,48,Support-B,Payment reconciliation mismatch
+TCK-2003,Orion Health,medium,pending,2026-08-17T01:00:00,72,Support-A,Question about export format

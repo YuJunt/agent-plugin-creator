@@ -1,0 +1,242 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  validate:
+    name: Skill Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: |
+          pip install pyyaml requests
+          echo "✅ Dependencies installed"
+
+      - name: Syntax check
+        run: |
+          python3 -m py_compile scripts/*.py
+          echo "✅ All scripts pass syntax check"
+
+      - name: Skill validation
+        run: |
+          python3 scripts/validate_skill.py .
+          echo "✅ Skill validation passed"
+
+      - name: Official quick_validate
+        run: |
+          python3 official/skill-creator/scripts/quick_validate.py .
+          echo "✅ Official validation passed"
+
+      - name: Release audit
+        run: |
+          python3 scripts/release_audit.py .
+          echo "✅ Release audit passed"
+
+      - name: All scripts have --help
+        run: |
+          count=0
+          total=0
+          for f in scripts/*.py; do
+            total=$((total+1))
+            if python3 "$f" --help >/dev/null 2>&1; then
+              count=$((count+1))
+            else
+              echo "❌ Missing --help: $f"
+            fi
+          done
+          echo "Scripts with --help: $count / $total"
+          if [ "$count" -ne "$total" ]; then exit 1; fi
+
+  eval:
+    name: Evaluation Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: |
+          pip install pyyaml requests
+          echo "✅ Dependencies installed"
+
+      - name: Trigger evaluation
+        run: |
+          python3 scripts/run_trigger_eval.py --skill . --output trigger-results.json
+          echo "✅ Trigger evaluation passed"
+
+      - name: Selection evaluation
+        run: |
+          python3 scripts/run_selection_eval.py --skill . --output selection-results.json
+          echo "✅ Selection evaluation passed"
+
+      - name: Edge evaluation
+        run: |
+          python3 scripts/run_edge_eval.py --skill . --output edge-results.json
+          echo "✅ Edge evaluation passed"
+
+      - name: Upload eval results
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-results
+          path: |
+            trigger-results.json
+            selection-results.json
+            edge-results.json
+
+  examples:
+    name: Example Plugins Validation
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        example: [minimal-skill-only, customer-support.triage, ecommerce.refund-approval, multi-skill-ts-mcp]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: |
+          pip install pyyaml requests
+          echo "✅ Dependencies installed"
+
+      - name: Validate ${{ matrix.example }}
+        run: |
+          python3 scripts/validate_plugin.py examples/${{ matrix.example }}
+          echo "✅ ${{ matrix.example }} validation passed"
+
+      - name: Security audit ${{ matrix.example }}
+        run: |
+          python3 scripts/audit_plugin.py examples/${{ matrix.example }} --severity high
+          echo "✅ ${{ matrix.example }} security audit passed"
+
+  security:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: |
+          pip install pyyaml requests
+          echo "✅ Dependencies installed"
+
+      - name: Security audit (self)
+        run: |
+          # 技能本身不是 Plugin，用 security_check.py 做安全检查
+          python3 scripts/security_check.py . --severity high
+          echo "✅ Self security audit passed"
+
+      - name: Check for hardcoded secrets
+        run: |
+          found=0
+          for f in $(find scripts/ -name "*.py" -type f); do
+            if grep -qE "(api_key|secret|password|token)\s*=\s*['\"][^'\"]+['\"]" "$f"; then
+              echo "❌ Potential hardcoded secret in: $f"
+              found=1
+            fi
+          done
+          if [ "$found" -eq 0 ]; then
+            echo "✅ No hardcoded secrets found"
+          else
+            exit 1
+          fi
+
+      - name: Check for dangerous patterns
+        run: |
+          found=0
+          for f in $(find scripts/ -name "*.py" -type f); do
+            if grep -qE "(eval\(|exec\(|subprocess.*shell=True|os\.system\()" "$f"; then
+              echo "⚠️  Dangerous pattern in: $f"
+              found=1
+            fi
+          done
+          if [ "$found" -eq 0 ]; then
+            echo "✅ No dangerous patterns found"
+          fi
+
+  conformance:
+    name: Official Conformance Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: |
+          pip install pyyaml requests
+          echo "✅ Dependencies installed"
+
+      - name: Official semantics test
+        run: |
+          python3 scripts/test_official_semantics.py
+          echo "✅ Official semantics test passed"
+
+      - name: Failure boundaries test
+        run: |
+          python3 scripts/test_failure_boundaries.py
+          echo "✅ Failure boundaries test passed"
+
+      - name: Client conformance test
+        run: |
+          python3 scripts/run_client_conformance.py examples/minimal-skill-only
+          echo "✅ Client conformance test passed"
+
+  version-check:
+    name: Version Consistency
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: |
+          pip install pyyaml requests
+          echo "✅ Dependencies installed"
+
+      - name: Check version consistency
+        run: |
+          skill_ver=$(grep -oP '>\s*\*\*版本\*\*:\s*v?\K[\d.]+' SKILL.md)
+          prov_ver=$(python3 -c "import json; print(json.load(open('provenance.json'))['version'])")
+          changelog_ver=$(grep -oP '##\s*\[\K[\d.]+' CHANGELOG.md | head -1)
+          
+          echo "SKILL.md: v$skill_ver"
+          echo "provenance.json: v$prov_ver"
+          echo "CHANGELOG.md: v$changelog_ver"
+          
+          if [ "$skill_ver" != "$prov_ver" ] || [ "$skill_ver" != "$changelog_ver" ]; then
+            echo "❌ Version mismatch!"
+            exit 1
+          fi
+          echo "✅ Version consistency verified"

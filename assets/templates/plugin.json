@@ -1,0 +1,15 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "your-plugin-name",
+  "version": "0.1.0",
+  "description": "一句话描述插件的用途",
+  "author": {
+    "name": "Your Name",
+    "email": "you@example.com",
+    "url": "https://example.com"
+  },
+  "homepage": "https://example.com/plugin-docs",
+  "repository": "https://github.com/your-org/your-plugin",
+  "license": "MIT",
+  "keywords": ["keyword1", "keyword2"]
+}

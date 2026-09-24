@@ -1,0 +1,10 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "customer-support.triage",
+  "version": "1.0.0",
+  "description": "Triage support tickets, identify SLA risk, and recommend evidence-based routing actions.",
+  "author": {
+    "name": "Regression Test Team"
+  },
+  "license": "MIT"
+}

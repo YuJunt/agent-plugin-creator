@@ -1,0 +1,20 @@
+{
+  "root": "minimal-skill-only",
+  "files": [
+    {
+      "path": "README.md",
+      "sha256": "5f134df1bc4eeca9726c037bb382e8fa3abab99eb8874b027aa734956953c145",
+      "size": 668
+    },
+    {
+      "path": "plugin.json",
+      "sha256": "13a4b63c2ff375b93396ae1c779a122e661051e539ca328b77384a9d60a4d67a",
+      "size": 344
+    },
+    {
+      "path": "skills/code-reviewer/SKILL.md",
+      "sha256": "70ca811af47d76c8c331ec707d74311e2682d2643ec9fd78ebf514cb187f44de",
+      "size": 1789
+    }
+  ]
+}

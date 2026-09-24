@@ -1,0 +1,31 @@
+{
+  "plugin": "/runtime/user_skills/agent-plugin-creator/examples/customer-support.triage",
+  "overall": "warning",
+  "gates": [
+    {
+      "gate": "business-contract",
+      "status": "passed",
+      "evidence": "README.md present"
+    },
+    {
+      "gate": "skill-quality",
+      "status": "passed",
+      "evidence": "1 immediate-child Skill(s) found"
+    },
+    {
+      "gate": "mcp-quality",
+      "status": "passed",
+      "evidence": "evaluation files present"
+    },
+    {
+      "gate": "runtime-evidence",
+      "status": "warning",
+      "evidence": "no bundled runtime detected"
+    },
+    {
+      "gate": "secrets",
+      "status": "passed",
+      "evidence": "no high-confidence secret markers"
+    }
+  ]
+}

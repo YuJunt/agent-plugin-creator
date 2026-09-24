@@ -1,0 +1,31 @@
+{
+  "tool_name": "example_tool",
+  "description": "One sentence describing the bounded operation and what it does not do.",
+  "classification": "read-only",
+  "side_effects": false,
+  "requires_user_confirmation": false,
+  "idempotency": {
+    "required": false,
+    "key_fields": []
+  },
+  "input_schema": {
+    "type": "object",
+    "properties": {},
+    "required": [],
+    "additionalProperties": false
+  },
+  "output_schema": {
+    "type": "object",
+    "properties": {},
+    "required": [],
+    "additionalProperties": false
+  },
+  "errors": [
+    {"code": "invalid_input", "retryable": false, "user_action": "Correct the input."},
+    {"code": "upstream_timeout", "retryable": true, "user_action": "Retry or report partial data."}
+  ],
+  "audit": {
+    "fields": ["timestamp", "caller", "resource_scope", "outcome"],
+    "must_redact": ["credentials", "unnecessary_pii"]
+  }
+}
