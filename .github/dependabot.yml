@@ -1,0 +1,40 @@
+# Dependabot 配置
+# 自动检测依赖更新并创建 PR
+
+version: 2
+updates:
+  # GitHub Actions 依赖更新
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "chore"
+      prefix-development: "chore"
+      include: "scope"
+
+  # pip 依赖更新（CI 环境使用的依赖）
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "python"
+    commit-message:
+      prefix: "chore"
+      prefix-development: "chore"
+      include: "scope"
+    # 核心脚本零第三方依赖，仅监控 CI 环境依赖
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]

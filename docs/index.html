@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent Plugin Creator - 可移植插件创建工具</title>
+    <meta name="description" content="创建符合 Agent Plugins 1.0.0 规范的可移植插件包，自包含官方 Agent Skills 和 MCP SDK 创建能力">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --bg: #ffffff;
+            --bg-secondary: #f8fafc;
+            --text: #1e293b;
+            --text-secondary: #64748b;
+            --border: #e2e8f0;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --code-bg: #1e293b;
+            --code-text: #e2e8f0;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text);
+            background: var(--bg);
+        }
+        .container { max-width: 960px; margin: 0 auto; padding: 0 24px; }
+        header {
+            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #3b82f6 100%);
+            color: white;
+            padding: 80px 0 60px;
+            text-align: center;
+        }
+        header h1 { font-size: 2.5rem; font-weight: 700; margin-bottom: 16px; }
+        header p { font-size: 1.2rem; opacity: 0.9; max-width: 600px; margin: 0 auto 32px; }
+        .badges { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+        .badge {
+            background: rgba(255,255,255,0.15);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            backdrop-filter: blur(10px);
+        }
+        .cta { display: flex; gap: 16px; justify-content: center; margin-top: 32px; flex-wrap: wrap; }
+        .btn {
+            display: inline-block;
+            padding: 12px 28px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .btn-primary { background: white; color: var(--primary); }
+        .btn-primary:hover { background: #f1f5f9; transform: translateY(-2px); }
+        .btn-outline { border: 2px solid white; color: white; }
+        .btn-outline:hover { background: rgba(255,255,255,0.1); }
+        section { padding: 60px 0; }
+        section:nth-child(even) { background: var(--bg-secondary); }
+        h2 { font-size: 1.8rem; margin-bottom: 32px; text-align: center; }
+        .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; }
+        .feature {
+            background: white;
+            padding: 28px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            transition: all 0.2s;
+        }
+        .feature:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.08); transform: translateY(-4px); }
+        .feature-icon { font-size: 2rem; margin-bottom: 12px; }
+        .feature h3 { font-size: 1.1rem; margin-bottom: 8px; }
+        .feature p { color: var(--text-secondary); font-size: 0.95rem; }
+        .code-block {
+            background: var(--code-bg);
+            color: var(--code-text);
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: 'Fira Code', 'Consolas', monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin: 16px 0;
+        }
+        .code-block .comment { color: #94a3b8; }
+        .code-block .command { color: #60a5fa; }
+        .clients { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+        .client {
+            background: white;
+            border: 1px solid var(--border);
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 24px; text-align: center; }
+        .stat-number { font-size: 2.5rem; font-weight: 700; color: var(--primary); }
+        .stat-label { color: var(--text-secondary); font-size: 0.9rem; margin-top: 4px; }
+        footer {
+            background: var(--code-bg);
+            color: var(--text-secondary);
+            padding: 40px 0;
+            text-align: center;
+        }
+        footer a { color: #60a5fa; text-decoration: none; }
+        footer a:hover { text-decoration: underline; }
+        .footer-links { display: flex; gap: 24px; justify-content: center; margin-bottom: 16px; flex-wrap: wrap; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>Agent Plugin Creator</h1>
+            <p>创建符合 Agent Plugins 1.0.0 规范的可移植插件包，自包含官方 Agent Skills 和 MCP SDK 创建能力</p>
+            <div class="badges">
+                <span class="badge">v1.4.0</span>
+                <span class="badge">MIT License</span>
+                <span class="badge">CI: 9/9 ✅</span>
+                <span class="badge">零第三方依赖</span>
+            </div>
+            <div class="cta">
+                <a href="https://github.com/YuJunt/agent-plugin-creator" class="btn btn-primary">GitHub 仓库</a>
+                <a href="https://github.com/YuJunt/agent-plugin-creator/releases" class="btn btn-outline">下载发布包</a>
+            </div>
+        </div>
+    </header>
+
+    <section>
+        <div class="container">
+            <h2>核心功能</h2>
+            <div class="features">
+                <div class="feature">
+                    <div class="feature-icon">🛠️</div>
+                    <h3>从零创建插件</h3>
+                    <p>交互式向导或配置文件批量生成，支持 Skill + MCP 组合打包</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">🔌</div>
+                    <h3>6个客户端适配</h3>
+                    <p>Claude Code / Cursor / GitHub Copilot / OpenAI Codex / Google Gemini / 豆包</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">🛡️</div>
+                    <h3>安全审计</h3>
+                    <p>硬编码密钥检测、代码注入检测、路径穿越检测、发布前安全检查</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">✅</div>
+                    <h3>规范验证</h3>
+                    <p>对齐官方 skills-ref 工具和 Agent Plugins 1.0.0 规范</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">🔄</div>
+                    <h3>反向封装</h3>
+                    <p>将插件反向封装为普通 Skill，兼容不支持 Agent Plugin 的平台</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">🚀</div>
+                    <h3>CI/CD 就绪</h3>
+                    <p>GitHub Actions 自动验证、测试、发布，9个 Job 全通过</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <div class="container">
+            <h2>快速开始</h2>
+            <div class="code-block">
+<span class="comment"># 克隆到技能目录</span>
+<span class="command">git clone</span> https://github.com/YuJunt/agent-plugin-creator.git ~/.claude/skills/agent-plugin-creator
+
+<span class="comment"># 使用交互式向导</span>
+<span class="command">cd</span> agent-plugin-creator
+<span class="command">python3</span> scripts/wizard.py
+
+<span class="comment"># 或使用命令行</span>
+<span class="command">python3</span> scripts/init_skill.py my-skill --path ./my-plugin/skills
+<span class="command">python3</span> scripts/validate_plugin.py ./my-plugin
+<span class="command">python3</span> scripts/audit_plugin.py ./my-plugin
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <div class="container">
+            <h2>支持的客户端</h2>
+            <div class="clients">
+                <div class="client">Claude Code</div>
+                <div class="client">Cursor</div>
+                <div class="client">GitHub Copilot</div>
+                <div class="client">OpenAI Codex</div>
+                <div class="client">Google Gemini</div>
+                <div class="client">豆包 Doubao</div>
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <div class="container">
+            <h2>项目数据</h2>
+            <div class="stats">
+                <div>
+                    <div class="stat-number">30+</div>
+                    <div class="stat-label">Python 脚本</div>
+                </div>
+                <div>
+                    <div class="stat-number">5</div>
+                    <div class="stat-label">示例插件</div>
+                </div>
+                <div>
+                    <div class="stat-number">5</div>
+                    <div class="stat-label">评估用例</div>
+                </div>
+                <div>
+                    <div class="stat-number">9</div>
+                    <div class="stat-label">CI Jobs</div>
+                </div>
+                <div>
+                    <div class="stat-number">~60ms</div>
+                    <div class="stat-label">平均执行时间</div>
+                </div>
+                <div>
+                    <div class="stat-number">96.4</div>
+                    <div class="stat-label">质量评分/100</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <div class="footer-links">
+                <a href="https://github.com/YuJunt/agent-plugin-creator">GitHub</a>
+                <a href="https://github.com/YuJunt/agent-plugin-creator/issues">Issues</a>
+                <a href="https://github.com/YuJunt/agent-plugin-creator/discussions">Discussions</a>
+                <a href="https://github.com/YuJunt/agent-plugin-creator/blob/main/CONTRIBUTING.md">贡献指南</a>
+                <a href="https://github.com/YuJunt/agent-plugin-creator/blob/main/SECURITY.md">安全策略</a>
+            </div>
+            <p>Agent Plugin Creator &copy; 2026 | MIT License | 由 YuJunt 维护</p>
+        </div>
+    </footer>
+</body>
+</html>
