@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 讨论与问答
+    url: https://github.com/YuJunt/agent-plugin-creator/discussions
+    about: 请在 Discussions 中提问、分享使用经验或讨论想法
+  - name: 📖 文档
+    url: https://github.com/YuJunt/agent-plugin-creator#readme
+    about: 先阅读 README、INSTALL.md 和 CONTRIBUTING.md
+  - name: 🔒 安全漏洞
+    url: https://github.com/YuJunt/agent-plugin-creator/security/advisories
+    about: 安全漏洞请通过 Security Advisories 私下报告，不要公开创建 Issue
