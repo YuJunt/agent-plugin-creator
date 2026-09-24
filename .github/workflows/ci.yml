@@ -19,6 +19,11 @@ jobs:
         with:
           python-version: '3.9'
 
+      - name: Install dependencies
+        run: |
+          pip install pyyaml
+          echo "✅ Dependencies installed"
+
       - name: Syntax check
         run: |
           python3 -m py_compile scripts/*.py
