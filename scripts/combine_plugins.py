@@ -82,6 +82,21 @@ def combine_plugins(plugin_dirs: list, output_dir: Path, name: str, version: str
                 if dest.exists():
                     shutil.rmtree(dest)
                 shutil.copytree(skill_dir, dest)
+
+                # 如果发生了重命名，同步更新 SKILL.md 中的 name 字段
+                if skill_name != skill_dir.name:
+                    skill_md = dest / "SKILL.md"
+                    if skill_md.exists():
+                        content = skill_md.read_text(encoding="utf-8")
+                        import re as _re
+                        content = _re.sub(
+                            r'^(name:\s*).+$',
+                            f'\\g<1>{skill_name}',
+                            content,
+                            count=1,
+                            flags=_re.MULTILINE,
+                        )
+                        skill_md.write_text(content, encoding="utf-8")
                 all_skills.add(skill_name)
                 result["skills"].append(skill_name)
 

@@ -449,12 +449,14 @@ def main():
             print("使用 --force 覆盖，或指定其他 --output 路径", file=sys.stderr)
             sys.exit(1)
 
-    # 最终 skill name 用插件名转换的（不是输出目录名）
+    # 最终 skill name：如果输出目录名与插件名转换的不一致，自动用输出目录名
+    # （与 wizard.py/combine_plugins.py 行为一致，确保 validate_skill 通过）
     final_skill_name = skill_name
-    # 警告：如果输出目录名和 skill name 不一致，validate_skill 会报错
-    if output_dir.name != final_skill_name and not args.json:
-        print(f"⚠️  注意: 输出目录名 '{output_dir.name}' 与 skill name '{final_skill_name}' 不一致")
-        print(f"   validate_skill.py 会要求目录名与 skill name 一致，建议使用 --output {final_skill_name}")
+    if output_dir.name != final_skill_name:
+        final_skill_name = output_dir.name
+        if not args.json:
+            print(f"⚠️  输出目录名 '{output_dir.name}' 与插件转换名 '{skill_name}' 不一致")
+            print(f"   已自动将 skill name 更新为 '{output_dir.name}'（符合 agentskills.io 规范要求）")
     # 发现组件
     skills = discover_skills(plugin_dir)
     mcp_servers = discover_mcp_servers(plugin_dir)
