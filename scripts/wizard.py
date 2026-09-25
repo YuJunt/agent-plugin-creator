@@ -522,13 +522,52 @@ def normalize_config(config: dict) -> dict:
     return config
 
 
+def load_presets() -> dict:
+    """加载预设模板库"""
+    presets_path = SKILL_DIR / "assets" / "templates" / "presets.json"
+    if presets_path.exists():
+        return json.loads(presets_path.read_text(encoding="utf-8"))
+    return {"templates": {}, "smart_inference": {}}
+
+
+def infer_template(description: str, presets: dict) -> str | None:
+    """从描述智能推断模板"""
+    inference = presets.get("smart_inference", {}).get("keywords_to_template", {})
+    desc_lower = description.lower()
+    for pattern, template_name in inference.items():
+        import re
+        if re.search(pattern, desc_lower, re.IGNORECASE):
+            return template_name
+    return None
+
+
 def main():
     parser = argparse.ArgumentParser(description="Agent Plugin 交互式创建向导")
     parser.add_argument("--config", help="从 JSON 配置文件创建（非交互式）")
     parser.add_argument("--output", help="输出目录（默认使用插件名称）")
     parser.add_argument("--dry-run", action="store_true", help="预览模式，不实际写入文件")
     parser.add_argument("--force", action="store_true", help="覆盖已有输出目录")
+    parser.add_argument("--list-templates", action="store_true", help="列出可用的预设模板")
+    parser.add_argument("--template", help="使用预设模板（如 customer-support, data-analysis, code-review, knowledge-base, minimal, full-stack）")
+    parser.add_argument("--infer", help="从描述智能推断模板并生成配置")
+    parser.add_argument("--name", help="插件名称（覆盖模板/配置中的名称）")
     args = parser.parse_args()
+
+    presets = load_presets()
+
+    # 列出模板
+    if args.list_templates:
+        print("可用预设模板:")
+        print("-" * 50)
+        for tname, tdata in presets.get("templates", {}).items():
+            skills_count = len(tdata.get("skills", []))
+            mcp_count = len(tdata.get("mcp_servers", []))
+            tools_count = sum(len(s.get("tools", [])) for s in tdata.get("mcp_servers", []))
+            print(f"  {tname:20s} | {skills_count} Skill, {mcp_count} MCP, {tools_count} 工具")
+            print(f"  {'':20s}   {tdata.get('description', '')}")
+        print()
+        print("用法: python3 wizard.py --template customer-support --output ./my-plugin")
+        return
 
     # 收集配置
     if args.config:
@@ -549,8 +588,35 @@ def main():
             sys.exit(1)
         config = normalize_config(config)
         print(f"📋 从配置文件加载: {config_path}")
+    elif args.template:
+        # 使用预设模板
+        templates = presets.get("templates", {})
+        if args.template not in templates:
+            print(f"错误: 模板 '{args.template}' 不存在", file=sys.stderr)
+            print(f"可用模板: {', '.join(templates.keys())}", file=sys.stderr)
+            sys.exit(1)
+        template = templates[args.template]
+        config = normalize_config(template)
+        print(f"📋 使用预设模板: {args.template}")
+        print(f"   {template.get('description', '')}")
+    elif args.infer:
+        # 智能推断
+        inferred = infer_template(args.infer, presets)
+        if inferred:
+            template = presets["templates"][inferred]
+            config = normalize_config(template)
+            print(f"🧠 智能推断: 描述匹配模板 '{inferred}'")
+            print(f"   {template.get('description', '')}")
+        else:
+            print(f"🧠 智能推断: 未匹配到预设模板，使用 minimal 模板")
+            config = normalize_config(presets["templates"].get("minimal", {"name": "my-plugin", "skills": [], "mcp_servers": []}))
+        config["description"] = args.infer
     else:
         config = interactive_collect()
+
+    # 覆盖名称
+    if args.name:
+        config["name"] = args.name
 
     # 确定输出目录
     output_dir = Path(args.output) if args.output else Path(config["name"])

@@ -1,0 +1,141 @@
+{
+  "templates": {
+    "customer-support": {
+      "name": "customer-support",
+      "description": "客户支持工单分类与自动回复插件",
+      "skills": [
+        {
+          "name": "ticket-triage",
+          "description": "客户工单分类技能。当用户需要对客户支持工单进行分类、优先级判断、路由分配时使用。触发词：工单分类、ticket triage、客户支持、客服路由、优先级判断。"
+        }
+      ],
+      "mcp_servers": [
+        {
+          "name": "support-api",
+          "language": "python",
+          "transport": "stdio",
+          "tools": [
+            {"name": "classify_ticket", "description": "对工单文本进行分类，返回类别和置信度", "parameters": {"type": "object", "properties": {"text": {"type": "string"}, "categories": {"type": "array"}}, "required": ["text"]}},
+            {"name": "suggest_reply", "description": "根据工单内容生成建议回复", "parameters": {"type": "object", "properties": {"ticket_id": {"type": "string"}, "context": {"type": "string"}}, "required": ["ticket_id"]}},
+            {"name": "get_customer_info", "description": "获取客户历史信息和订单记录", "parameters": {"type": "object", "properties": {"customer_id": {"type": "string"}}, "required": ["customer_id"]}}
+          ]
+        }
+      ]
+    },
+    "data-analysis": {
+      "name": "data-analysis",
+      "description": "数据分析与可视化插件",
+      "skills": [
+        {
+          "name": "data-insight",
+          "description": "数据分析技能。当用户需要分析数据、生成统计报告、发现数据异常、创建可视化图表时使用。触发词：数据分析、data analysis、统计报告、数据可视化、异常检测、趋势分析。"
+        }
+      ],
+      "mcp_servers": [
+        {
+          "name": "analytics-engine",
+          "language": "python",
+          "transport": "stdio",
+          "tools": [
+            {"name": "analyze_dataset", "description": "对数据集进行统计分析，返回描述性统计和分布信息", "parameters": {"type": "object", "properties": {"data_path": {"type": "string"}, "columns": {"type": "array"}}, "required": ["data_path"]}},
+            {"name": "detect_anomalies", "description": "检测数据中的异常值和离群点", "parameters": {"type": "object", "properties": {"data_path": {"type": "string"}, "method": {"type": "string", "enum": ["zscore", "iqr", "isolation_forest"]}}, "required": ["data_path"]}},
+            {"name": "generate_chart", "description": "生成数据可视化图表", "parameters": {"type": "object", "properties": {"data_path": {"type": "string"}, "chart_type": {"type": "string", "enum": ["line", "bar", "pie", "scatter", "heatmap"]}, "x_column": {"type": "string"}, "y_column": {"type": "string"}}, "required": ["data_path", "chart_type"]}}
+          ]
+        }
+      ]
+    },
+    "code-review": {
+      "name": "code-review",
+      "description": "代码审查与质量分析插件",
+      "skills": [
+        {
+          "name": "code-reviewer",
+          "description": "代码审查技能。当用户需要审查代码、发现潜在bug、评估代码质量、检查安全漏洞时使用。触发词：代码审查、code review、代码质量、bug检测、安全审计、性能分析。"
+        }
+      ],
+      "mcp_servers": [
+        {
+          "name": "review-engine",
+          "language": "python",
+          "transport": "stdio",
+          "tools": [
+            {"name": "analyze_file", "description": "分析单个代码文件，返回问题列表和改进建议", "parameters": {"type": "object", "properties": {"file_path": {"type": "string"}, "language": {"type": "string"}}, "required": ["file_path"]}},
+            {"name": "check_security", "description": "检查代码中的安全漏洞", "parameters": {"type": "object", "properties": {"file_path": {"type": "string"}}, "required": ["file_path"]}},
+            {"name": "measure_complexity", "description": "计算代码复杂度指标（圈复杂度、认知复杂度）", "parameters": {"type": "object", "properties": {"file_path": {"type": "string"}}, "required": ["file_path"]}},
+            {"name": "suggest_refactor", "description": "给出代码重构建议", "parameters": {"type": "object", "properties": {"file_path": {"type": "string"}, "focus": {"type": "string"}}, "required": ["file_path"]}}
+          ]
+        }
+      ]
+    },
+    "knowledge-base": {
+      "name": "knowledge-base",
+      "description": "知识库检索与问答插件",
+      "skills": [
+        {
+          "name": "kb-qa",
+          "description": "知识库问答技能。当用户需要从文档库中检索信息、回答基于知识库的问题、生成文档摘要时使用。触发词：知识库、knowledge base、文档检索、RAG、问答、语义搜索。"
+        }
+      ],
+      "mcp_servers": [
+        {
+          "name": "kb-server",
+          "language": "python",
+          "transport": "stdio",
+          "tools": [
+            {"name": "search_documents", "description": "语义搜索知识库文档", "parameters": {"type": "object", "properties": {"query": {"type": "string"}, "top_k": {"type": "integer"}}, "required": ["query"]}},
+            {"name": "answer_question", "description": "基于知识库回答问题", "parameters": {"type": "object", "properties": {"question": {"type": "string"}, "context": {"type": "string"}}, "required": ["question"]}},
+            {"name": "summarize_document", "description": "生成文档摘要", "parameters": {"type": "object", "properties": {"doc_id": {"type": "string"}, "max_length": {"type": "integer"}}, "required": ["doc_id"]}},
+            {"name": "add_document", "description": "向知识库添加文档", "parameters": {"type": "object", "properties": {"content": {"type": "string"}, "metadata": {"type": "object"}}, "required": ["content"]}}
+          ]
+        }
+      ]
+    },
+    "minimal": {
+      "name": "minimal-plugin",
+      "description": "最小化纯 Skill 插件（无 MCP）",
+      "skills": [
+        {
+          "name": "my-skill",
+          "description": "我的技能。当用户需要[描述触发场景]时使用。触发词：[关键词1]、[关键词2]。"
+        }
+      ],
+      "mcp_servers": []
+    },
+    "full-stack": {
+      "name": "full-stack-plugin",
+      "description": "全功能插件（多 Skill + Python MCP + 多客户端）",
+      "skills": [
+        {
+          "name": "main-skill",
+          "description": "主技能。当用户需要[描述主要触发场景]时使用。触发词：[关键词]。"
+        },
+        {
+          "name": "helper-skill",
+          "description": "辅助技能。当用户需要[描述辅助触发场景]时使用。触发词：[关键词]。"
+        }
+      ],
+      "mcp_servers": [
+        {
+          "name": "main-server",
+          "language": "python",
+          "transport": "stdio",
+          "tools": [
+            {"name": "do_task", "description": "执行主要任务", "parameters": {"type": "object", "properties": {"input": {"type": "string"}}, "required": ["input"]}}
+          ]
+        }
+      ]
+    }
+  },
+  "smart_inference": {
+    "keywords_to_template": {
+      "客服|客户支持|工单|ticket": "customer-support",
+      "数据分析|统计|可视化|chart|analytics": "data-analysis",
+      "代码审查|code review|bug|质量": "code-review",
+      "知识库|knowledge|RAG|文档检索|问答": "knowledge-base",
+      "最小|简单|minimal|skill only": "minimal"
+    },
+    "default_language": "python",
+    "default_transport": "stdio",
+    "default_version": "0.1.0"
+  }
+}
