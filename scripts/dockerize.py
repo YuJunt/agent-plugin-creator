@@ -162,7 +162,11 @@ def main():
         print("错误: 未找到匹配的 MCP 服务器", file=sys.stderr)
         sys.exit(1)
 
-    output_dir = plugin_dir / args.output
+    # 处理输出目录：绝对路径直接用，相对路径拼接 plugin_dir
+    if Path(args.output).is_absolute():
+        output_dir = Path(args.output)
+    else:
+        output_dir = plugin_dir / args.output
     output_dir.mkdir(parents=True, exist_ok=True)
 
     generated = []
@@ -182,27 +186,36 @@ def main():
             content = generate_typescript_dockerfile(server["name"], port)
 
         dockerfile_path.write_text(content, encoding="utf-8")
-        generated.append(str(dockerfile_path.relative_to(plugin_dir)))
+        try:
+            generated.append(str(dockerfile_path.relative_to(output_dir)))
+        except ValueError:
+            generated.append(dockerfile_path.name)
 
     # 生成 docker-compose.yml
     if len(servers) > 1 or args.all:
-        compose_path = plugin_dir / "docker-compose.yml"
+        compose_path = output_dir / "docker-compose.yml"
         if not compose_path.exists() or args.force:
             compose_content = generate_docker_compose(plugin_dir.name, servers, args.port)
             compose_path.write_text(compose_content, encoding="utf-8")
             generated.append("docker-compose.yml")
 
     # 生成 .dockerignore
-    dockerignore_path = plugin_dir / ".dockerignore"
+    dockerignore_path = output_dir / ".dockerignore"
     if not dockerignore_path.exists() or args.force:
         dockerignore_path.write_text(generate_dockerignore(), encoding="utf-8")
         generated.append(".dockerignore")
+
+    # 输出目录路径：优先相对路径，失败则用绝对路径
+    try:
+        output_dir_str = str(output_dir.relative_to(plugin_dir))
+    except ValueError:
+        output_dir_str = str(output_dir)
 
     result = {
         "plugin": plugin_dir.name,
         "servers": [s["name"] for s in servers],
         "generated": generated,
-        "output_dir": str(output_dir.relative_to(plugin_dir)),
+        "output_dir": output_dir_str,
         "base_port": args.port,
     }
 
