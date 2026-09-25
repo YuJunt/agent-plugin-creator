@@ -55,7 +55,9 @@ description: 创建符合 Agent Plugins 1.0.0 开放规范的可移植插件包�
 
 ## 插件创建工作流
 
-### 第 0 步：需求分析（所有路径必做）
+> **自由度说明**：每个步骤标注自由度等级——🟢高自由度（灵活调整）/ 🟡中自由度（推荐流程）/ 🔴低自由度（必须严格执行）。脆弱步骤（出错代价高）用低自由度，灵活步骤用高自由度。
+
+### 第 0 步：需求分析（所有路径必做）🟢高自由度
 
 明确插件的三个核心问题：
 
@@ -75,36 +77,36 @@ description: 创建符合 Agent Plugins 1.0.0 开放规范的可移植插件包�
 最短路径，4 步完成：
 
 ```
-1. init_skill → 写 SKILL.md（每写一步就跑 validate_skill）
-2. audit_plugin（安全审计）
-3. generate_docs（生成 README）
-4. package_plugin（打包发布）
+1. init_skill → 写 SKILL.md（每写一步就跑 validate_skill）🟡中
+2. audit_plugin（安全审计）🔴低
+3. generate_docs（生成 README）🟡中
+4. package_plugin（打包发布）🔴低
 ```
 
 详细步骤：
 
-**A1. 创建 Skill**
+**A1. 创建 Skill** 🟡中自由度
 
 对每个 skill 运行：
 ```bash
 python3 <skill_dir>/scripts/init_skill.py <skill-name> --path <临时目录> [--force]
 ```
-按官方规范编写 SKILL.md。**每写完一个 skill 就立即跑验证**：
+按官方规范编写 SKILL.md。**每写完一个 skill 就立即跑验证**🔴低自由度：
 ```bash
 python3 <skill_dir>/scripts/validate_skill.py <skill目录路径>
 ```
 
-**A2. 组装插件**
+**A2. 组装插件** 🔴低自由度
 
 创建 `plugin.json`（参考 `assets/templates/plugin.json`），把 skill 目录移入 `skills/<skill-name>/`。
 
-**A3. 验证 + 审计**
+**A3. 验证 + 审计** 🔴低自由度（必须通过才能继续）
 ```bash
 python3 <skill_dir>/scripts/validate_plugin.py <插件目录>
 python3 <skill_dir>/scripts/audit_plugin.py <插件目录>
 ```
 
-**A4. 打包**
+**A4. 打包** 🔴低自由度
 ```bash
 python3 <skill_dir>/scripts/package_plugin.py <插件目录> --output dist
 ```
@@ -116,23 +118,23 @@ python3 <skill_dir>/scripts/package_plugin.py <插件目录> --output dist
 推荐路径，先跑通再完善：
 
 ```
-1. wizard 生成最小原型（1 skill + 1 MCP）
-2. test_mcp_handshake（跑通 MCP 通信）
-3. 完善 skill 和 MCP 工具（每加一个就验一次）
-4. validate_plugin + audit_plugin
-5. package_plugin
-6. 豆包平台集成（连接器配置 或 反向封装）
+1. wizard 生成最小原型（1 skill + 1 MCP）🟡中
+2. test_mcp_handshake（跑通 MCP 通信）🔴低（关键门禁）
+3. 完善 skill 和 MCP 工具（每加一个就验一次）🟢高
+4. validate_plugin + audit_plugin 🔴低
+5. package_plugin 🔴低
+6. 豆包平台集成（连接器配置 或 反向封装）🟡中
 ```
 
 详细步骤：
 
-**B1. 快速生成最小原型（推荐用 wizard）**
+**B1. 快速生成最小原型（推荐用 wizard）** 🟡中自由度
 ```bash
 python3 <skill_dir>/scripts/wizard.py --config config.json --output ./my-plugin
 ```
 或交互式：`python3 <skill_dir>/scripts/wizard.py`
 
-**B2. 先跑通 MCP 通信（关键！不要写完再验）**
+**B2. 先跑通 MCP 通信（关键！不要写完再验）** 🔴低自由度（必须通过才能继续）
 ```bash
 python3 <skill_dir>/scripts/test_mcp_handshake.py \
   --command "python3 servers/<server-name>/server.py" \
@@ -140,23 +142,23 @@ python3 <skill_dir>/scripts/test_mcp_handshake.py \
 ```
 如果握手失败，先修这个，不要继续往下写。
 
-**B3. 完善内容**
+**B3. 完善内容** 🟢高自由度
 - 给 skill 添加 scripts/、references/、assets/
 - 给 MCP 添加更多工具：`python3 <skill_dir>/scripts/create_mcp_server.py add --project <项目> --tool new_tool.json`
 - 每加一个组件就跑 `validate_skill.py` 或 `test_mcp_handshake.py`
 
-**B4. 完整验证**
+**B4. 完整验证** 🔴低自由度
 ```bash
 python3 <skill_dir>/scripts/validate_plugin.py <插件目录>
 python3 <skill_dir>/scripts/audit_plugin.py <插件目录>
 ```
 
-**B5. 打包**
+**B5. 打包** 🔴低自由度
 ```bash
 python3 <skill_dir>/scripts/package_plugin.py <插件目录> --output dist
 ```
 
-**B6. 豆包平台集成（二选一）**
+**B6. 豆包平台集成（二选一）** 🟡中自由度
 
 - **本地用户（推荐）**：在豆包工作客户端「技能·连接器」中新建自定义连接器，选 STDIO 类型，填服务器命令和参数。平台原生管理 MCP 生命周期。
 - **云端/手机用户**：反向封装为普通 Skill：
@@ -173,23 +175,23 @@ python3 <skill_dir>/scripts/package_plugin.py <插件目录> --output dist
 
 ```
 1-5. 同路径 B（本地开发和测试）
-6. 部署 streamable-http 服务器到云
-7. probe_remote_mcp 验证连通性
-8. mcp.json 改为 URL 模式
+6. 部署 streamable-http 服务器到云 🟢高
+7. probe_remote_mcp 验证连通性 🔴低
+8. mcp.json 改为 URL 模式 🔴低
 9. 完成
 ```
 
-**C6. 部署远程服务器**
+**C6. 部署远程服务器** 🟢高自由度
 
 把 `servers/<name>/` 部署到云服务器，确保 streamable-http 端口可访问。
 
-**C7. 验证远程连通性**
+**C7. 验证远程连通性** 🔴低自由度
 ```bash
 python3 <skill_dir>/scripts/probe_remote_mcp.py \
   --url "https://your-server/mcp" --output probe-result.json
 ```
 
-**C8. 更新 mcp.json**
+**C8. 更新 mcp.json** 🔴低自由度
 
 把 stdio 配置改为 URL 模式：
 ```json
@@ -299,17 +301,55 @@ python3 <skill_dir>/scripts/wizard.py --config config.json --dry-run
 - 9 类常见错误及修复方法
 - 8 个脚本的故障排除指南
 
-## Gotchas（踩过的坑）
+**质量检查清单**：发布前对照 `references/quality-checklist.md` 逐项检查，三层分类（必备层×2 / 推荐层×1 / 可选层×0.5），必备层必须100%达标才能发布。
 
-这些是开发过程中实际踩过的坑，不踩不知道：
+## Gotchas（踩过的坑，最高优先级）
 
-1. **MCP 服务器生成后必须立即跑握手测试**——不要写完所有代码再验。`test_mcp_handshake.py` 跑不通就停下来修，不要继续往下写。
-2. **stdio 服务器不要打印到 stdout**——stdout 是 JSON-RPC 通道，打印调试信息到 stdout 会破坏协议。调试信息必须打到 stderr。
-3. **mcp.json 里的 command 必须是单个可执行 token**——不能是 shell 字符串（如 `bash -c "..."`）。参数放 `args` 数组里。
-4. **路径安全检查**：mcp.json 里的 `command` 如果含 `/`（如绝对路径或子目录），必须以 `./` 开头，否则 `validate_plugin.py` 会拒绝。
-5. **wizard 生成的是骨架不是成品**——SKILL.md 里的"第一步/第二步"是占位符，必须根据实际需求重写，不能直接用。
-6. **反向封装后的产物不能用 validate_plugin 验证**——`plugin_to_skill.py` 生成的是普通 Skill（无 plugin.json），要用 `validate_skill.py` 验证。
-7. **audit_plugin 基于正则，有已知局限**——不能检出动态调用（如 `getattr(os, "system")`）、eval 嵌套导入、混淆字符串拼接。详见 `references/cheatsheet.md` 的"安全审计局限性"章节。
-8. **反向封装的输出目录名必须和 skill name 一致**——`plugin_to_skill.py` 生成的 skill name 是插件名转换的（点变连字符），`--output` 目录名必须和它一致，否则 `validate_skill.py` 会报错。
+> 这些是开发过程中实际踩过的坑，每个都有**症状→修正→原因**。遇到对应情况必须按修正做。
+
+### 1. MCP 服务器写完再验，结果全是错
+- **症状**：写完所有 MCP 工具代码后运行，握手失败、工具不响应、协议解析错误，不知道哪里出问题
+- **修正**：生成 MCP 服务器后**立即跑 `test_mcp_handshake.py`**，跑不通就停下来修，不要继续往下写。每加一个工具就验一次。
+- **原因**：MCP 协议对 stdout/stderr 分离、JSON-RPC 格式要求严格，早期错误会被后续代码掩盖，越早发现越容易定位。
+
+### 2. stdio 服务器打印调试信息到 stdout
+- **症状**：MCP 握手失败，报 "Invalid JSON-RPC response" 或 "Unexpected token"，但代码看起来没问题
+- **修正**：所有调试信息必须打到 `stderr`（`print(..., file=sys.stderr)`），stdout 是 JSON-RPC 专用通道，不能有任何额外输出。
+- **原因**：stdio 传输模式下，stdout 的每一行都会被客户端当作 JSON-RPC 响应解析，调试信息会破坏协议格式。
+
+### 3. mcp.json 的 command 写成 shell 字符串
+- **症状**：`validate_plugin.py` 报错 "command must be a single executable token"，或客户端启动服务器失败
+- **修正**：`command` 必须是单个可执行文件名（如 `python3`、`node`），参数放在 `args` 数组里。禁止 `bash -c "..."` 或带空格的命令。
+- **原因**：Agent Plugins 规范要求 command 是单一可执行 token，防止 shell 注入和跨平台兼容性问题。
+
+### 4. mcp.json 里的路径不以 ./ 开头
+- **症状**：`validate_plugin.py` 报路径安全错误，或客户端找不到服务器文件
+- **修正**：`command` 如果含 `/`（绝对路径或子目录），必须以 `./` 开头（如 `./bin/server`）。插件内所有相对路径都以 `./` 开头。
+- **原因**：路径安全检查防止路径穿越攻击，`./` 前缀明确表示"插件根目录内"，避免被解析为系统路径。
+
+### 5. wizard 生成的骨架直接当成品用
+- **症状**：生成的插件 SKILL.md 里全是"第一步/第二步"占位符，description 没有触发词，技能永远不触发
+- **修正**：wizard 生成的是**骨架不是成品**。必须重写 SKILL.md 的 description（含三要素：做什么+什么时候用+触发词）、工作流步骤、Gotchas。
+- **原因**：wizard 只负责生成目录结构和占位内容，业务逻辑和触发场景只有用户知道，无法自动生成。
+
+### 6. 反向封装后用 validate_plugin 验证
+- **症状**：`plugin_to_skill.py` 生成的产物用 `validate_plugin.py` 验证，报"缺少 plugin.json"
+- **修正**：反向封装生成的是**普通 Skill**（无 plugin.json），要用 `validate_skill.py` 验证，不是 `validate_plugin.py`。
+- **原因**：反向封装的目的就是把 Plugin 转成不支持 Plugin 的平台也能用的 Skill，结构自然不同。
+
+### 7. audit_plugin 没检出动态调用的危险代码
+- **症状**：代码里有 `getattr(os, "system")(cmd)` 或 `eval(__import__('base64').b64decode(...))`，但 audit_plugin 没报
+- **修正**：audit_plugin 基于正则，**不能检出动态调用、混淆字符串、嵌套导入**。高危插件需要人工代码审查，不能只依赖自动化审计。
+- **原因**：静态正则分析无法处理运行时动态解析的代码，这是所有静态分析工具的共同局限。
+
+### 8. 反向封装的输出目录名与 skill name 不一致
+- **症状**：`plugin_to_skill.py --output ./my-skill` 生成后，`validate_skill.py` 报"目录名与 skill name 不一致"
+- **修正**：`--output` 目录名必须和生成的 skill name 一致（插件名中的点会转成连字符）。用 `--json` 输出查看生成的 skill_name，再指定对应目录名。
+- **原因**：agentskills.io 规范要求 skill 目录名与 frontmatter 的 name 字段完全一致，这是平台发现技能的依据。
+
+### 9. 插件包含 hooks/commands/agents 等非便携组件
+- **症状**：把旧客户端插件的 hooks、commands、自定义 agent 塞进 plugin.json，`validate_plugin.py` 报"未知顶层字段"
+- **修正**：便携核心只包含 skills/ + mcp.json + servers/。hooks、commands、agents、LSP、UI 等客户端专属组件放在 `com.<client>/` 扩展目录里，或用 `client_adapter.py` 生成。
+- **原因**：Agent Plugins 规范的便携核心刻意限制了组件类型，确保跨客户端可移植；客户端专属能力通过扩展机制提供。
 
 更多常见错误和故障排除见 `references/cheatsheet.md`。
