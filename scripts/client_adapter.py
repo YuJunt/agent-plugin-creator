@@ -10,6 +10,11 @@ Agent Plugin 多客户端适配工具（合并版）
   - copilot   GitHub Copilot / VS Code（com.github.copilot/hooks/）
   - cursor    Cursor IDE（.cursor/rules/，自动从 skills 转换）
   - gemini    Google Gemini（.gemini/）
+  - zed       Zed Editor（.zed/settings.json）
+  - continue  Continue.dev（.continue/config.json）
+  - roo       Roo Code（.roo/rules/）
+  - windsurf  Windsurf（.windsurf/rules/）
+  - cline     Cline（.cline/settings.json）
 
 三种模式:
   --check     只检查兼容性，不修改文件（默认）
@@ -59,6 +64,36 @@ CLIENT_CONFIGS = {
         "extension_dir": ".gemini",
         "required_files": ["plugin.json"],
         "optional_files": [],
+    },
+    "zed": {
+        "name": "Zed Editor",
+        "extension_dir": ".zed",
+        "required_files": [],
+        "optional_files": ["settings.json"],
+    },
+    "continue": {
+        "name": "Continue.dev",
+        "extension_dir": ".continue",
+        "required_files": [],
+        "optional_files": ["config.json"],
+    },
+    "roo": {
+        "name": "Roo Code",
+        "extension_dir": ".roo",
+        "required_files": [],
+        "optional_files": ["rules/"],
+    },
+    "windsurf": {
+        "name": "Windsurf",
+        "extension_dir": ".windsurf",
+        "required_files": [],
+        "optional_files": ["rules/"],
+    },
+    "cline": {
+        "name": "Cline",
+        "extension_dir": ".cline",
+        "required_files": [],
+        "optional_files": ["settings.json"],
     },
 }
 
@@ -214,6 +249,54 @@ def generate_client_extension(plugin_dir: Path, client: str, plugin: dict, force
                 if skill_dir.is_dir():
                     gemini_plugin["skills"].append({"name": skill_dir.name, "path": f"../skills/{skill_dir.name}"})
         write_if_missing(ext_dir / "plugin.json", json.dumps(gemini_plugin, indent=2, ensure_ascii=False) + "\n")
+
+    elif client == "zed":
+        zed_settings = {
+            "language_servers": {},
+            "agent": {
+                "enabled": True,
+                "provider": "openai",
+            },
+            "_comment": "Zed Editor 配置，参考 https://zed.dev/docs/agent",
+        }
+        write_if_missing(ext_dir / "settings.json", json.dumps(zed_settings, indent=2, ensure_ascii=False) + "\n")
+
+    elif client == "continue":
+        continue_config = {
+            "models": {},
+            "slashCommands": [],
+            "customCommands": [],
+            "_comment": "Continue.dev 配置，参考 https://docs.continue.dev/customize",
+        }
+        write_if_missing(ext_dir / "config.json", json.dumps(continue_config, indent=2, ensure_ascii=False) + "\n")
+
+    elif client in ("roo", "windsurf"):
+        # Roo Code 和 Windsurf 使用类似 Cursor 的 rules 格式
+        rules_dir = ext_dir / "rules"
+        rules_dir.mkdir(parents=True, exist_ok=True)
+        skills_dir = plugin_dir / "skills"
+        if skills_dir.exists():
+            for skill_dir in skills_dir.iterdir():
+                if not skill_dir.is_dir():
+                    continue
+                skill_md = skill_dir / "SKILL.md"
+                if not skill_md.exists():
+                    continue
+                desc = extract_skill_description(skill_md)
+                content = skill_md.read_text(encoding="utf-8")
+                body = content.split("---", 2)[-1].strip() if content.count("---") >= 2 else content
+                rule_content = f"---\ndescription: {desc}\n---\n\n{body}\n"
+                write_if_missing(rules_dir / f"{skill_dir.name}.md", rule_content)
+
+    elif client == "cline":
+        cline_settings = {
+            "cline": {
+                "enabled": True,
+                "rules": [],
+            },
+            "_comment": "Cline 配置，参考 https://github.com/cline/cline",
+        }
+        write_if_missing(ext_dir / "settings.json", json.dumps(cline_settings, indent=2, ensure_ascii=False) + "\n")
 
     return generated
 
