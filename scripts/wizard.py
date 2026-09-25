@@ -221,9 +221,13 @@ def generate_plugin(config: dict, output_dir: Path, dry_run: bool = False) -> li
         "author": config.get("author", {}),
         "license": config.get("license", "MIT"),
         "keywords": config.get("keywords", []),
-        "generated-by": {
-            "tool": "agent-plugin-creator",
-            "version": skill_version
+        "extensions": {
+            "agent-plugin-creator": {
+                "generated-by": {
+                    "tool": "agent-plugin-creator",
+                    "version": skill_version
+                }
+            }
         }
     }
     add_file("plugin.json", json.dumps(plugin_json, indent=2, ensure_ascii=False) + "\n")
@@ -387,7 +391,8 @@ dependencies = ["fastmcp"]
                 add_file(f"servers/{server_name}/pyproject.toml", pyproject)
 
                 # server.py
-                server_py = f"""from fastmcp import FastMCP
+                server_py = f"""import sys
+from fastmcp import FastMCP
 
 mcp = FastMCP("{server_name}")
 
