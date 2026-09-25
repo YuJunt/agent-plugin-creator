@@ -509,13 +509,18 @@ __pycache__/
 
 
 def normalize_config(config: dict) -> dict:
-    """为非交互配置补全默认值，避免 KeyError。"""
+    """为非交互配置补全默认值，避免 KeyError。同时兼容顶层 skills/mcp_servers 格式。"""
     config.setdefault("version", "0.1.0")
     config.setdefault("description", "")
     config.setdefault("author", {})
     config.setdefault("license", "MIT")
     config.setdefault("keywords", [])
     components = config.setdefault("components", {})
+    # 兼容顶层 skills/mcp_servers 格式（自动移入 components）
+    if "skills" in config and not components.get("skills"):
+        components["skills"] = config.pop("skills")
+    if "mcp_servers" in config and not components.get("mcp_servers"):
+        components["mcp_servers"] = config.pop("mcp_servers")
     components.setdefault("skills", [])
     components.setdefault("mcp_servers", [])
     config.setdefault("target_clients", ["all"])

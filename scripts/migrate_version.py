@@ -14,6 +14,7 @@ import argparse
 import json
 import re
 import sys
+from datetime import datetime
 from pathlib import Path
 
 
@@ -127,7 +128,7 @@ def migrate_1_0_to_1_1(plugin_dir: Path, dry_run: bool = False) -> dict:
     # 3. 创建迁移记录
     migration_record = {
         "migration": "1.0.0->1.1.0",
-        "timestamp": __import__("datetime").datetime.now().isoformat(),
+        "timestamp": datetime.now().isoformat(),
         "changes": changes,
         "notes": MIGRATION_NOTES["1.0.0->1.1.0"],
     }

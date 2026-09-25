@@ -214,6 +214,26 @@ def py_type(param: dict) -> str:
     return pytype if required else f"Optional[{pytype}] = None"
 
 
+# Python 保留关键字集合（生成代码时需转义）
+PYTHON_KEYWORDS = frozenset({
+    "False", "None", "True", "and", "as", "assert", "async", "await",
+    "break", "class", "continue", "def", "del", "elif", "else", "except",
+    "finally", "for", "from", "global", "if", "import", "in", "is", "lambda",
+    "nonlocal", "not", "or", "pass", "raise", "return", "try", "while", "with", "yield",
+})
+
+
+def safe_py_name(name: str) -> str:
+    """将参数名转换为安全的 Python 标识符（保留关键字加下划线后缀）"""
+    if name in PYTHON_KEYWORDS:
+        return f"{name}_"
+    # 替换其他非标识符字符
+    safe = name.replace("-", "_").replace(".", "_")
+    if safe[0].isdigit():
+        safe = f"_{safe}"
+    return safe
+
+
 def generate_python_server(name: str, definition: dict, transport: str) -> str:
     tools, resources, prompts = definition["tools"], definition["resources"], definition["prompts"]
     lines = ['"""', f'MCP Server: {name}', '由 create_mcp_server.py 自动生成', '基于官方 FastMCP', '"""', '',
@@ -227,7 +247,7 @@ def generate_python_server(name: str, definition: dict, transport: str) -> str:
         for tool in tools:
             tname, tdesc = tool["name"], tool["description"]
             params = normalize_params(tool)
-            sig = ", ".join([f"{p}: {py_type(d)}" for p, d in params.items()])
+            sig = ", ".join([f"{safe_py_name(p)}: {py_type(d)}" for p, d in params.items()])
             lines += [f'@mcp.tool()', f'def {tname}({sig}) -> str:', f'    """{tdesc}"""',
                       f'    # TODO: 实现工具 "{tname}" 的业务逻辑',
                       f'    return "Tool {tname} executed"', '']
@@ -247,7 +267,7 @@ def generate_python_server(name: str, definition: dict, transport: str) -> str:
         for prompt in prompts:
             pname = prompt["name"]
             pargs = prompt.get("arguments", [])
-            sig = ", ".join([f"{a['name']}: str" for a in pargs])
+            sig = ", ".join([f"{safe_py_name(a['name'])}: str" for a in pargs])
             lines += [f'@mcp.prompt()', f'def {pname}({sig}) -> str:',
                       f'    """{prompt.get("description", "")}"""',
                       f'    # TODO: 实现提示模板 "{pname}"',
@@ -414,7 +434,7 @@ def cmd_add(args):
                 print(f"⚠️  工具已存在，跳过: {tname}")
                 continue
             params = normalize_params(tool)
-            sig = ", ".join([f"{p}: {py_type(d)}" for p, d in params.items()])
+            sig = ", ".join([f"{safe_py_name(p)}: {py_type(d)}" for p, d in params.items()])
             new_code += f'\n@mcp.tool()\ndef {tname}({sig}) -> str:\n    """{tool["description"]}"""\n    # TODO: 实现工具 "{tname}"\n    return "Tool {tname} added"\n'
             added += 1
         marker = "# ============================================================\n# 启动服务器"

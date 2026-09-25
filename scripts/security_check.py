@@ -102,8 +102,14 @@ def scan_file(file_path: Path, result: SecurityResult, exclude_tests: bool = Tru
     if exclude_tests and ("test" in file_path.name or "official" in str(file_path)):
         return
 
-    # 排除安全审计脚本本身（它包含危险模式的正则定义）
-    if file_path.name in {"audit_plugin.py", "security_check.py"}:
+    # 排除安全审计/分析脚本本身（它们包含危险模式的正则定义，用于检测其他代码）
+    if file_path.name in {
+        "audit_plugin.py", "security_check.py",
+        "analyze_plugin.py", "health_check.py",
+        "best_practices.py", "errors.py",
+        "score_plugin.py", "fuzz_test.py",
+        "supply_chain_scan.py",
+    }:
         return
 
     result.files_scanned += 1

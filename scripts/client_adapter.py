@@ -404,6 +404,9 @@ def main():
     # 确定目标客户端
     if args.clients:
         clients = [c.strip() for c in args.clients.split(",")]
+        # "all" 展开为所有支持的客户端
+        if "all" in clients:
+            clients = SUPPORTED_TARGETS
     elif args.target != "all":
         clients = [c.strip() for c in args.target.split(",")]
     else:
