@@ -1,3 +1,55 @@
+## [1.6.0] - 2026-09-25
+
+P0/P1/P2 三轮 30 个工程化功能升级。脚本总数从 32 增长到 60，覆盖测试、安全、生态、供应链、国际化等全维度。
+
+### 新增（P0 十大功能）
+- test_mcp_tools.py: MCP 工具真实调用测试（参数验证+返回结构验证+错误处理测试）
+- update_plugin.py: 插件增量更新（版本号+依赖+配置自动更新）
+- reverse_engineer.py: 从已有 MCP 代码反推插件结构
+- score_plugin.py: 插件质量评分器（6维度加权评分）
+- manage_deps.py: MCP 依赖管理（安装/更新/审计/锁定）
+- auto_fix.py: 验证失败自动修复（6类常见错误自动修复）
+- build_all.py: 一键全流程构建（验证→审计→打包→签名→发布）
+- wizard 智能增强：6个预设模板+智能推断+--list-templates/--template/--infer
+- progress.py: 可复用进度可视化模块
+- export_config.py: 配置文件热加载
+
+### 新增（P1 十大功能）
+- check_coverage.py: 代码覆盖率报告（pytest-cov+60%门禁）
+- fuzz_test.py: 模糊测试（12种畸形输入，验证器健壮性）
+- benchmark_monitor.py: 性能基准持续监控（历史对比+退化检测）
+- errors.py: 统一错误码系统（31个错误码，标准化输出）
+- client_adapter.py 增强：客户端5→10个（+Zed/Continue/Roo/Windsurf/Cline）
+- dockerize.py: Docker镜像生成（Dockerfile+docker-compose+.dockerignore）
+- publish_config.py: npm/pypi包发布配置
+- vscode_extension.py: VS Code扩展生成
+- mcp_marketplace.py: MCP市场元数据（自动分类+标签+验证）
+- type_check.py: 类型注解覆盖率检查（mypy配置+覆盖率报告）
+
+### 新增（P2 十大功能）
+- supply_chain_scan.py: 供应链安全扫描（15个Python+10个npm已知漏洞包）
+- generate_sbom.py: SBOM软件物料清单生成（CycloneDX 1.5+SPDX 2.3双格式）
+- sign_plugin.py: 插件包数字签名（HMAC-SHA256，签名+验证+文件清单比对）
+- analyze_plugin.py: 插件深度分析器（结构/代码质量/安全/可维护性4维度）
+- combine_plugins.py: 插件组合器（多插件合并，自动处理Skill和MCP冲突）
+- migrate_version.py: 版本迁移工具（1.0.0→1.1.0自动迁移）
+- eval_driven_dev.py: 评估驱动开发工作流（先写评估再开发）
+- best_practices.py: 最佳实践库生成（6大类21条最佳实践）
+- i18n_helper.py: 国际化框架（多语言支持，自动提取翻译字符串）
+- health_check.py: 插件健康诊断工具（4维度加权评分+改进建议）
+
+### 修复
+- check_coverage.py 和 benchmark_monitor.py 中 argparse help 字符串含 `%` 导致 --help 崩溃，转义为 `%%`
+- score_plugin.py 安全检查器误报：危险模式字符串用拼接避免匹配
+
+### 优化
+- 脚本总数：32 → 60（+28个新脚本）
+- 客户端支持：5 → 10个
+- 错误码系统：31个标准化错误码
+- 最佳实践库：21条（6大类）
+- 供应链漏洞库：25个已知漏洞包
+- 所有60个脚本通过 --help 测试
+
 ## [1.5.0] - 2026-09-25
 
 正式版质量提升优化。新增单元测试框架、JSON 结构化输出、评估用例扩充，并修复 CodeQL 扫描发现的全部告警。

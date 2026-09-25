@@ -163,6 +163,11 @@ def main():
         shutil.rmtree(output_dir)
 
     name = args.name or "super-plugin"
+    # 确保 plugin name 与目录名一致（Agent Plugins 规范要求）
+    if output_dir.name != name:
+        print(f"⚠️  注意: 输出目录名 '{output_dir.name}' 与 name '{name}' 不一致")
+        print(f"   已自动将 plugin name 更新为 '{output_dir.name}'（符合 Agent Plugins 规范要求）")
+        name = output_dir.name
     result = combine_plugins(args.plugins, output_dir, name, args.version)
 
     if args.json:

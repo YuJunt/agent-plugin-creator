@@ -46,6 +46,49 @@
 | 端到端示例 | — | `references/examples.md` | `examples/` |
 | 官方 JSON Schema | — | `assets/schemas/1.0.0/` | — |
 
+### P0 新增（工程效率）
+
+| 能力 | 脚本 | 说明 |
+|------|------|------|
+| MCP 工具真实调用测试 | `scripts/test_mcp_tools.py` | 参数验证+返回结构+错误处理 |
+| 插件增量更新 | `scripts/update_plugin.py` | 版本号+依赖+配置自动更新 |
+| 从 MCP 代码反推插件 | `scripts/reverse_engineer.py` | 已有服务器代码→插件结构 |
+| 插件质量评分器 | `scripts/score_plugin.py` | 6维度加权评分 |
+| MCP 依赖管理 | `scripts/manage_deps.py` | 安装/更新/审计/锁定 |
+| 验证失败自动修复 | `scripts/auto_fix.py` | 6类常见错误自动修复 |
+| 一键全流程构建 | `scripts/build_all.py` | 验证→审计→打包→签名→发布 |
+| 进度可视化模块 | `scripts/progress.py` | 可复用进度条 |
+| 配置热加载 | `scripts/export_config.py` | 配置文件导出/导入 |
+
+### P1 新增（质量与生态）
+
+| 能力 | 脚本 | 说明 |
+|------|------|------|
+| 代码覆盖率报告 | `scripts/check_coverage.py` | pytest-cov+60%门禁 |
+| 模糊测试 | `scripts/fuzz_test.py` | 12种畸形输入 |
+| 性能基准监控 | `scripts/benchmark_monitor.py` | 历史对比+退化检测 |
+| 统一错误码系统 | `scripts/errors.py` | 31个标准化错误码 |
+| Docker 镜像生成 | `scripts/dockerize.py` | Dockerfile+compose |
+| npm/pypi 发布配置 | `scripts/publish_config.py` | 包管理配置 |
+| VS Code 扩展生成 | `scripts/vscode_extension.py` | 完整扩展骨架 |
+| MCP 市场元数据 | `scripts/mcp_marketplace.py` | 自动分类+标签 |
+| 类型注解检查 | `scripts/type_check.py` | mypy配置+覆盖率 |
+
+### P2 新增（安全与高级）
+
+| 能力 | 脚本 | 说明 |
+|------|------|------|
+| 供应链安全扫描 | `scripts/supply_chain_scan.py` | 25个已知漏洞包检测 |
+| SBOM 生成 | `scripts/generate_sbom.py` | CycloneDX+SPDX双格式 |
+| 插件数字签名 | `scripts/sign_plugin.py` | HMAC-SHA256签名+验证 |
+| 插件深度分析器 | `scripts/analyze_plugin.py` | 4维度分析+改进建议 |
+| 插件组合器 | `scripts/combine_plugins.py` | 多插件合并+冲突处理 |
+| 版本迁移工具 | `scripts/migrate_version.py` | 1.0.0→1.1.0自动迁移 |
+| 评估驱动开发 | `scripts/eval_driven_dev.py` | 先写评估再开发 |
+| 最佳实践库 | `scripts/best_practices.py` | 6大类21条最佳实践 |
+| 国际化框架 | `scripts/i18n_helper.py` | 多语言支持+翻译提取 |
+| 插件健康诊断 | `scripts/health_check.py` | 4维度加权评分+体检 |
+
 ## 关键规则速查
 
 | 规则 | 说明 |
