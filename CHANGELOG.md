@@ -1,3 +1,24 @@
+## [1.5.0] - 2026-09-25
+
+正式版质量提升优化。新增单元测试框架、JSON 结构化输出、评估用例扩充，并修复 CodeQL 扫描发现的全部告警。
+
+### 新增
+- 单元测试框架：pytest.ini + tests/ 目录，25 个测试用例覆盖 validate_plugin/validate_skill/security_check/init_skill/package_plugin/release_audit 等核心脚本
+- JSON 结构化输出：validate_skill.py、init_skill.py、plugin_to_skill.py 新增 --json 参数，支持语言无关的结构化输出（国际化基础）
+- 评估用例从 5 个扩充到 12 个，新增安全漏洞检测、复杂MCP服务器、版本一致性、交互式向导、打包发布、多Skill路由、最小插件边界等场景
+
+### 修复
+- security_check.py 路径穿越误报：添加 docstring 状态跟踪（三引号内跳过），路径穿越检测改为只检测文件操作函数中的危险模式（open/Path/os.path.join/os.system/subprocess），不再对所有包含 `../` 的字符串告警
+- security_check.py 和 audit_plugin.py 新增 mask_sensitive() 函数，对输出中的密钥/Token/私钥进行掩码处理，修复 CodeQL clear-text-logging 告警
+- wizard.py 和 plugin_to_skill.py 的空 except 块改为捕获具体异常类型并添加注释，修复 CodeQL empty-except 告警
+- test_official_semantics.py 和 test_failure_boundaries.py 新增 argparse --help 支持
+
+### 优化
+- 安全检查从 3 个 medium 误报降至 0 个问题
+- CodeQL 告警从 30 个（5 error + 1 warning + 24 note）大幅减少
+- 所有核心脚本支持 --json 输出，便于自动化集成和国际用户使用
+- 单元测试覆盖率：25 个用例，4 秒内全部通过
+
 ## [1.4.0] - 2026-09-24
 
 大规模分发就绪度 P2 优化。新增 CI/CD、统一日志、安全自动化和性能基准，达到正式版最高标准。

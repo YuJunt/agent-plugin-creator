@@ -35,6 +35,55 @@
       "prompt": "为一个 Agent Plugin 生成 5 个客户端（Claude Code/Codex/Copilot/Cursor/Gemini）的适配扩展，并验证兼容性。要求使用 client_adapter.py 的 --check 和 --generate 模式，输出每个客户端的适配文件清单。",
       "expected_output": "--check 模式报告所有客户端兼容状态；--generate 模式生成 .claude-plugin/、.codex-plugin/、com.github.copilot/、.cursor/rules/、.gemini/ 目录；Cursor 规则从 skills 自动转换；适配文件不修改插件核心内容。",
       "files": []
+    },
+    {
+      "id": 6,
+      "name": "security-vulnerability-detection",
+      "prompt": "创建一个包含安全漏洞的测试插件（硬编码 API key、eval 执行、shell=True 子进程），然后运行 audit_plugin.py 和 security_check.py 进行安全审计。验证所有高危问题都被检测到。",
+      "expected_output": "audit_plugin.py 检测到硬编码密钥和危险代码；security_check.py 报告 critical/high 级别问题；安全审计报告包含文件路径、行号和问题描述；建议修复方案明确。",
+      "files": []
+    },
+    {
+      "id": 7,
+      "name": "complex-mcp-server",
+      "prompt": "使用 create_mcp_server.py 创建一个复杂的 TypeScript MCP 服务器，包含 5 个工具（读写/查询/计算）、3 个资源、2 个提示模板。要求使用 streamable-http 传输，生成完整项目结构并验证工具契约。",
+      "expected_output": "生成完整 TypeScript 项目（package.json/tsconfig.json/src/server.ts）；5个工具都有 Zod schema 和实现骨架；3个资源正确注册；2个提示模板包含参数；validate_tool_contract.py 验证通过；mcp.json schema 版本与 plugin.json 一致。",
+      "files": []
+    },
+    {
+      "id": 8,
+      "name": "version-consistency-check",
+      "prompt": "创建一个版本号不一致的插件（plugin.json 版本 1.0.0，SKILL.md 版本 2.0.0，CHANGELOG 版本 1.5.0），运行 release_audit.py 验证版本一致性检查是否生效。",
+      "expected_output": "release_audit.py 报告版本不一致错误；错误信息明确指出哪个文件版本不匹配；provenance.json 作为版本唯一来源；修复后重新审计通过。",
+      "files": []
+    },
+    {
+      "id": 9,
+      "name": "interactive-wizard-config-mode",
+      "prompt": "使用 wizard.py 的 --config 模式，通过 JSON 配置文件创建一个包含 2 个 Skill 和 1 个 Python MCP 服务器的完整插件。配置文件指定名称、版本、描述、许可证和组件。验证生成的插件结构完整。",
+      "expected_output": "wizard.py 从 config.json 读取配置；生成 plugin.json/mcp.json/2个Skill目录/MCP服务器代码；所有文件路径正确；validate_plugin.py 验证通过；--dry-run 模式不实际写入文件。",
+      "files": []
+    },
+    {
+      "id": 10,
+      "name": "package-and-release",
+      "prompt": "对一个完整的 Agent Plugin 执行 package_plugin.py 打包，生成 zip 包、MANIFEST.json 和 marketplace.json。验证打包内容完整，SHA256 哈希正确，可被客户端正确识别。",
+      "expected_output": "生成 <name>-v<version>.zip；MANIFEST.json 包含所有文件的 sha256 和大小；marketplace.json 包含各平台配置；zip 包内目录结构正确；build_release.py 生成可复现构建。",
+      "files": []
+    },
+    {
+      "id": 11,
+      "name": "multi-skill-plugin-routing",
+      "prompt": "创建一个包含 3 个子技能的插件（代码审查/文档生成/测试编写），每个技能有独立的触发场景。验证 validate_plugin.py 能正确识别所有技能，且 ROUTE 预检查能正确路由到对应技能。",
+      "expected_output": "3个技能都有合法的 frontmatter；description 包含明确的触发关键词；validate_plugin.py 报告3个技能通过；selection_eval 能正确区分不同技能的触发场景；near-miss 场景不误触发。",
+      "files": []
+    },
+    {
+      "id": 12,
+      "name": "minimal-plugin-boundary",
+      "prompt": "创建一个绝对最小化的 Agent Plugin（只有 plugin.json，无 skills 无 mcp），验证 validate_plugin.py 的边界处理。然后逐步添加组件，验证每一步的验证结果变化。",
+      "expected_output": "最小插件（只有必需字段）验证通过；缺少 name 字段报错；name 与目录名不一致报错；添加无效 Skill 时报错；添加合法 Skill 后通过；边界情况处理正确，无崩溃。",
+      "files": []
     }
   ]
 }

@@ -71,7 +71,8 @@ def discover_skills(plugin_dir: Path) -> list:
                         if line.strip().startswith("description:"):
                             description = line.split(":", 1)[1].strip().strip('"').strip("'")
                             break
-        except Exception:
+        except (IndexError, ValueError, OSError):
+            # SKILL.md 解析失败时使用默认描述，不影响封装
             pass
 
         skills.append({
@@ -150,7 +151,8 @@ def generate_wrapper_skill_md(plugin: dict, skills: list, mcp_servers: list, ski
     if provenance_path.exists():
         try:
             skill_version = json.loads(provenance_path.read_text(encoding="utf-8")).get("version", skill_version)
-        except Exception:
+        except (json.JSONDecodeError, OSError):
+            # provenance.json 读取失败时使用默认版本
             pass
     lines.append(f"  wrapper-version: {skill_version}")
     lines.append(f"  generated-by:")
@@ -405,10 +407,12 @@ def generate_start_mcp_script(mcp_servers: list) -> str:
 
 
 def main():
+    import json
     parser = argparse.ArgumentParser(description="Agent Plugin 反向封装为 Skill 工具")
     parser.add_argument("plugin_dir", help="Agent Plugin 目录路径")
     parser.add_argument("--output", help="输出 Skill 目录路径（默认：<skill-name>-skill）")
     parser.add_argument("--force", action="store_true", help="覆盖已存在的输出目录")
+    parser.add_argument("--json", action="store_true", help="以 JSON 格式输出结果")
     args = parser.parse_args()
 
     plugin_dir = Path(args.plugin_dir).resolve()
@@ -434,7 +438,8 @@ def main():
     # 安全检查：输出目录不能等于输入目录
     if output_dir.resolve() == plugin_dir.resolve():
         output_dir = plugin_dir.parent / f"{skill_name}-skill"
-        print(f"⚠️  注意: 输出目录与输入目录相同，已自动改为: {output_dir.name}")
+        if not args.json:
+            print(f"⚠️  注意: 输出目录与输入目录相同，已自动改为: {output_dir.name}")
 
     if output_dir.exists():
         if args.force:
@@ -447,21 +452,22 @@ def main():
     # 最终 skill name 用插件名转换的（不是输出目录名）
     final_skill_name = skill_name
     # 警告：如果输出目录名和 skill name 不一致，validate_skill 会报错
-    if output_dir.name != final_skill_name:
+    if output_dir.name != final_skill_name and not args.json:
         print(f"⚠️  注意: 输出目录名 '{output_dir.name}' 与 skill name '{final_skill_name}' 不一致")
         print(f"   validate_skill.py 会要求目录名与 skill name 一致，建议使用 --output {final_skill_name}")
     # 发现组件
     skills = discover_skills(plugin_dir)
     mcp_servers = discover_mcp_servers(plugin_dir)
 
-    print(f"🔄 反向封装 Agent Plugin → Skill")
-    print(f"   源插件: {plugin_dir.name} (v{plugin.get('version', 'unknown')})")
-    print(f"   Plugin name: {plugin_name}")
-    print(f"   Skill name: {skill_name}")
-    print(f"   子技能: {len(skills)} 个")
-    print(f"   MCP 服务器: {len(mcp_servers)} 个")
-    print(f"   输出目录: {output_dir}")
-    print()
+    if not args.json:
+        print(f"🔄 反向封装 Agent Plugin → Skill")
+        print(f"   源插件: {plugin_dir.name} (v{plugin.get('version', 'unknown')})")
+        print(f"   Plugin name: {plugin_name}")
+        print(f"   Skill name: {skill_name}")
+        print(f"   子技能: {len(skills)} 个")
+        print(f"   MCP 服务器: {len(mcp_servers)} 个")
+        print(f"   输出目录: {output_dir}")
+        print()
 
     # 创建目录结构
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -471,28 +477,33 @@ def main():
     # 1. 生成封装层 SKILL.md
     wrapper_md = generate_wrapper_skill_md(plugin, skills, mcp_servers, skill_name=final_skill_name)
     (output_dir / "SKILL.md").write_text(wrapper_md, encoding="utf-8")
-    print("✅ 生成封装层 SKILL.md")
+    if not args.json:
+        print("✅ 生成封装层 SKILL.md")
 
     # 2. 复制原始 skills/ 目录
     src_skills = plugin_dir / "skills"
     if src_skills.exists():
         shutil.copytree(src_skills, output_dir / "skills")
-        print(f"✅ 复制 skills/ 目录 ({len(skills)} 个子技能)")
+        if not args.json:
+            print(f"✅ 复制 skills/ 目录 ({len(skills)} 个子技能)")
 
     # 3. 复制原始 servers/ 目录（MCP 服务器代码）
     src_servers = plugin_dir / "servers"
     if src_servers.exists():
         shutil.copytree(src_servers, output_dir / "servers")
-        print("✅ 复制 servers/ 目录 (MCP 服务器代码)")
+        if not args.json:
+            print("✅ 复制 servers/ 目录 (MCP 服务器代码)")
 
     # 4. 复制原始配置到 references/
     shutil.copy2(plugin_dir / "plugin.json", output_dir / "references" / "plugin.json")
-    print("✅ 复制 references/plugin.json")
+    if not args.json:
+        print("✅ 复制 references/plugin.json")
 
     src_mcp = plugin_dir / "mcp.json"
     if src_mcp.exists():
         shutil.copy2(src_mcp, output_dir / "references" / "mcp.json")
-        print("✅ 复制 references/mcp.json")
+        if not args.json:
+            print("✅ 复制 references/mcp.json")
 
     # 5. 生成 start_mcp.py（如果有 MCP 服务器）
     if mcp_servers:
@@ -500,7 +511,8 @@ def main():
         start_mcp_path = output_dir / "scripts" / "start_mcp.py"
         start_mcp_path.write_text(start_mcp_content, encoding="utf-8")
         start_mcp_path.chmod(0o755)
-        print(f"✅ 生成 scripts/start_mcp.py ({len(mcp_servers)} 个服务器配置)")
+        if not args.json:
+            print(f"✅ 生成 scripts/start_mcp.py ({len(mcp_servers)} 个服务器配置)")
 
     # 6. 复制其他可能的目录（排除客户端扩展，因为封装版不支持）
     client_ext_dirs = {".cursor", ".claude-plugin", ".codex-plugin", ".gemini",
@@ -509,11 +521,12 @@ def main():
         if item.is_dir() and item.name not in ("skills", "servers", "__pycache__") and item.name not in client_ext_dirs:
             if not (output_dir / item.name).exists():
                 shutil.copytree(item, output_dir / item.name)
-                print(f"✅ 复制 {item.name}/ 目录")
+                if not args.json:
+                    print(f"✅ 复制 {item.name}/ 目录")
 
     # 7. 用官方 skill-creator 的 quick_validate.py 做额外验证
     quick_validate = Path(__file__).resolve().parent.parent / "official" / "skill-creator" / "scripts" / "quick_validate.py"
-    if quick_validate.exists():
+    if quick_validate.exists() and not args.json:
         print()
         print("🔍 官方规范验证（official/skill-creator/quick_validate.py）...")
         result = subprocess.run(
@@ -526,13 +539,28 @@ def main():
             print(f"⚠️  {result.stdout.strip()}")
             print("   （警告不影响封装完成，但建议检查上述问题）")
 
+    file_count = sum(1 for _ in output_dir.rglob('*') if _.is_file())
+
+    if args.json:
+        result = {
+            "success": True,
+            "plugin_name": plugin_name,
+            "skill_name": final_skill_name,
+            "output_dir": str(output_dir),
+            "file_count": file_count,
+            "sub_skills": len(skills),
+            "mcp_servers": len(mcp_servers),
+        }
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        sys.exit(0)
+
     print()
     print("=" * 60)
     print("✅ 反向封装完成!")
     print("=" * 60)
     print()
     print(f"输出目录: {output_dir}")
-    print(f"文件总数: {sum(1 for _ in output_dir.rglob('*') if _.is_file())}")
+    print(f"文件总数: {file_count}")
     print()
     print("下一步:")
     print(f"  1. cd {output_dir}")

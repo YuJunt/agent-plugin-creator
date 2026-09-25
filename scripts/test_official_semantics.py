@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
+"""官方语义一致性测试：验证 validate_plugin.py 对 Agent Plugins 规范的核心语义判断。"""
 from pathlib import Path
-import json, subprocess, tempfile
+import argparse, json, subprocess, tempfile
 ROOT=Path(__file__).resolve().parents[1]
 VALID=ROOT/'scripts/validate_plugin.py'
 def run(d): return subprocess.run(['python3',str(VALID),str(d)],capture_output=True,text=True)
 def main():
+    parser = argparse.ArgumentParser(description="官方语义一致性测试")
+    parser.parse_args()
     with tempfile.TemporaryDirectory() as td:
         base=Path(td)
         # plugin name 必须与目录名一致（验证器要求），所以用目录名

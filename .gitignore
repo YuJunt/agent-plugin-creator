@@ -45,3 +45,11 @@ Thumbs.db
 # 备份
 *.bak
 *.backup
+
+# 生成的临时文件
+release-audit.json
+build-manifest.json
+quality.json
+__pycache__/
+.pytest_cache/
+*.pyc

@@ -68,6 +68,21 @@ class ValidationResult:
     def success(self):
         return len(self.errors) == 0
 
+    def to_dict(self):
+        """转换为字典（用于 JSON 输出）"""
+        return {
+            "success": self.success,
+            "errors": self.errors,
+            "warnings": self.warnings,
+            "passed": self.passed,
+            "summary": {
+                "total_checks": len(self.passed) + len(self.errors) + len(self.warnings),
+                "passed": len(self.passed),
+                "errors": len(self.errors),
+                "warnings": len(self.warnings),
+            }
+        }
+
     def report(self):
         lines = []
         lines.append("=" * 60)
@@ -348,14 +363,19 @@ def validate_skill(skill_path: str) -> ValidationResult:
 
 def main():
     import argparse
+    import json
     parser = argparse.ArgumentParser(
         description="Agent Skill 规范验证器（对齐 agentskills.io 官方 skills-ref）",
         epilog="示例: python3 validate_skill.py ./my-skill",
     )
     parser.add_argument("skill_dir", help="Skill 目录路径")
+    parser.add_argument("--json", action="store_true", help="以 JSON 格式输出结果")
     args = parser.parse_args()
     result = validate_skill(args.skill_dir)
-    print(result.report())
+    if args.json:
+        print(json.dumps(result.to_dict(), ensure_ascii=False, indent=2))
+    else:
+        print(result.report())
     sys.exit(0 if result.success else 1)
 
 

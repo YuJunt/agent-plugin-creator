@@ -265,6 +265,24 @@ def audit_skill(skill_dir: Path, rel_prefix: str, result: AuditResult):
         scan_code_file(skill_md, rel, result)
 
 
+def mask_sensitive(text: str) -> str:
+    """对可能包含敏感信息的文本进行掩码处理"""
+    import re
+    patterns = [
+        (r'(sk-[a-zA-Z0-9]{8})[a-zA-Z0-9]+', r'\1...'),
+        (r'(ghp_[a-zA-Z0-9]{8})[a-zA-Z0-9]+', r'\1...'),
+        (r'(AKIA[A-Z0-9]{4})[A-Z0-9]+', r'\1...'),
+        (r'(api[_-]?key\s*[=:]\s*["\']?[a-zA-Z0-9]{4})[a-zA-Z0-9]+', r'\1...'),
+        (r'(password\s*[=:]\s*["\']?[^\s"\']{2})[^\s"\']+', r'\1...'),
+        (r'(token\s*[=:]\s*["\']?[a-zA-Z0-9]{4})[a-zA-Z0-9]+', r'\1...'),
+        (r'(BEGIN [A-Z ]*PRIVATE KEY-----)[\s\S]+?(-----END [A-Z ]*PRIVATE KEY-----)', r'\1...\2'),
+    ]
+    masked = text
+    for pattern, replacement in patterns:
+        masked = re.sub(pattern, replacement, masked, flags=re.IGNORECASE)
+    return masked
+
+
 def print_report(result: AuditResult, min_severity: str = "low"):
     """打印审计报告"""
     severity_order = {"critical": 0, "high": 1, "medium": 2, "low": 3}
@@ -303,7 +321,7 @@ def print_report(result: AuditResult, min_severity: str = "low"):
         print(f"   文件: {issue['file']}" + (f":{issue['line']}" if issue['line'] > 0 else ""))
         print(f"   类别: {issue['category']}")
         if issue["snippet"]:
-            print(f"   代码: {issue['snippet']}")
+            print(f"   代码: {mask_sensitive(issue['snippet'])}")
 
     print()
     print("=" * 70)
