@@ -1,6 +1,6 @@
 {
   "name": "agent-plugin-creator",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "spec_version": "1.0.0",
   "license": "MIT",
   "author": {
@@ -13,5 +13,5 @@
     "mcp_builder": "official/mcp-builder/"
   },
   "description": "创建符合 Agent Plugins 1.0.0 开放规范的可移植插件包",
-  "last_updated": "2026-09-24"
+  "last_updated": "2026-09-25"
 }

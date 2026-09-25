@@ -117,9 +117,29 @@ def scan_file(file_path: Path, result: SecurityResult, exclude_tests: bool = Tru
     result.lines_scanned += len(lines)
     rel_path = str(file_path)
 
+    # 跟踪 docstring 状态（三引号内的内容不检测）
+    in_docstring = False
+    docstring_char = None
+
     for line_num, line in enumerate(lines, 1):
-        # 跳过注释
         stripped = line.strip()
+
+        # 检测 docstring 开始/结束
+        if not in_docstring:
+            if stripped.startswith('"""') or stripped.startswith("'''"):
+                docstring_char = stripped[0:3]
+                # 单行 docstring（开头和结尾在同一行）
+                if stripped.count(docstring_char) >= 2:
+                    continue
+                in_docstring = True
+                continue
+        else:
+            if docstring_char in stripped:
+                in_docstring = False
+                docstring_char = None
+            continue
+
+        # 跳过注释
         if stripped.startswith("#") or stripped.startswith("//"):
             continue
 
@@ -135,12 +155,20 @@ def scan_file(file_path: Path, result: SecurityResult, exclude_tests: bool = Tru
                 result.add_issue(severity, category, rel_path, line_num,
                                  f"检测到危险代码模式: {category}", stripped[:100])
 
-        # 路径穿越检测（仅在字符串字面量中）
-        if '"' in line or "'" in line:
-            for pattern, category in PATH_TRAVERSAL_PATTERNS:
-                if re.search(pattern, line):
-                    result.add_issue("medium", category, rel_path, line_num,
-                                     f"检测到路径穿越模式: {category}", stripped[:100])
+        # 路径穿越检测（仅检测真正危险的代码模式，排除配置中的正常相对路径）
+        # 只检测文件操作函数中的路径穿越，如 open("../"), Path("../"), os.path.join("..", ...)
+        dangerous_path_ops = [
+            r'open\s*\(\s*["\'].*\.\./',
+            r'Path\s*\(\s*["\'].*\.\./',
+            r'os\.path\.join\s*\(\s*["\']\.\.',
+            r'os\.system\s*\(\s*["\'].*\.\./',
+            r'subprocess\..*\.\./',
+        ]
+        for pattern in dangerous_path_ops:
+            if re.search(pattern, line):
+                result.add_issue("medium", "path_traversal", rel_path, line_num,
+                                 "检测到潜在路径穿越: 文件操作中使用了父目录引用", stripped[:100])
+                break
 
 
 def check_file_permissions(root: Path, result: SecurityResult):
@@ -183,6 +211,25 @@ def check_mcp_json_security(root: Path, result: SecurityResult):
                                      f"{key}: {value[:20]}...")
 
 
+def mask_sensitive(text: str) -> str:
+    """对可能包含敏感信息的文本进行掩码处理"""
+    import re
+    # 掩码 API key / token / secret 模式
+    patterns = [
+        (r'(sk-[a-zA-Z0-9]{8})[a-zA-Z0-9]+', r'\1...'),
+        (r'(ghp_[a-zA-Z0-9]{8})[a-zA-Z0-9]+', r'\1...'),
+        (r'(AKIA[A-Z0-9]{4})[A-Z0-9]+', r'\1...'),
+        (r'(api[_-]?key\s*[=:]\s*["\']?[a-zA-Z0-9]{4})[a-zA-Z0-9]+', r'\1...'),
+        (r'(password\s*[=:]\s*["\']?[^\s"\']{2})[^\s"\']+', r'\1...'),
+        (r'(token\s*[=:]\s*["\']?[a-zA-Z0-9]{4})[a-zA-Z0-9]+', r'\1...'),
+        (r'(BEGIN [A-Z ]*PRIVATE KEY-----)[\s\S]+?(-----END [A-Z ]*PRIVATE KEY-----)', r'\1...\2'),
+    ]
+    masked = text
+    for pattern, replacement in patterns:
+        masked = re.sub(pattern, replacement, masked, flags=re.IGNORECASE)
+    return masked
+
+
 def print_report(result: SecurityResult, min_severity: str = "low"):
     """打印安全检查报告。"""
     severity_order = {"critical": 0, "high": 1, "medium": 2, "low": 3}
@@ -220,7 +267,8 @@ def print_report(result: SecurityResult, min_severity: str = "low"):
         print(f"   文件: {issue['file']}" + (f":{issue['line']}" if issue['line'] > 0 else ""))
         print(f"   类别: {issue['category']}")
         if issue["snippet"]:
-            print(f"   代码: {issue['snippet']}")
+            # 对代码片段中的敏感信息进行掩码
+            print(f"   代码: {mask_sensitive(issue['snippet'])}")
 
     print()
     print("=" * 70)

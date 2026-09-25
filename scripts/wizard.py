@@ -209,7 +209,8 @@ def generate_plugin(config: dict, output_dir: Path, dry_run: bool = False) -> li
     if provenance_path.exists():
         try:
             skill_version = json.loads(provenance_path.read_text(encoding="utf-8")).get("version", skill_version)
-        except Exception:
+        except (json.JSONDecodeError, OSError):
+            # provenance.json 读取失败时使用默认版本，不影响插件生成
             pass
 
     plugin_json = {

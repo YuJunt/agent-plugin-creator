@@ -148,6 +148,7 @@ description: 描述这个 skill 做什么，以及什么时候应该使用它。
 
 
 def main():
+    import json
     parser = argparse.ArgumentParser(
         description="Agent Skill 脚手架生成器（基于 agentskills.io 官方规范）"
     )
@@ -158,18 +159,32 @@ def main():
         action="store_true",
         help="覆盖已有目录（默认不覆盖，幂等设计）",
     )
+    parser.add_argument("--json", action="store_true", help="以 JSON 格式输出结果")
     args = parser.parse_args()
 
     # 验证 name
     errors = validate_name(args.name)
     if errors:
-        print("名称验证失败:", file=sys.stderr)
-        for e in errors:
-            print(f"  - {e}", file=sys.stderr)
+        if args.json:
+            print(json.dumps({"success": False, "errors": errors}, ensure_ascii=False, indent=2))
+        else:
+            print("名称验证失败:", file=sys.stderr)
+            for e in errors:
+                print(f"  - {e}", file=sys.stderr)
         sys.exit(1)
 
     # 创建 skill
     skill_dir = create_skill(args.name, args.path, force=args.force)
+
+    if args.json:
+        result = {
+            "success": True,
+            "name": args.name,
+            "path": str(skill_dir),
+            "structure": ["SKILL.md", "scripts/", "references/", "assets/"],
+        }
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        sys.exit(0)
 
     print(f"✅ Skill 创建成功: {skill_dir}")
     print()

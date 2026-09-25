@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
+"""失败边界测试：验证 simulate_discovery.py 对有效/无效 Skill 和 MCP 的分类。"""
 from pathlib import Path
-import json, subprocess, tempfile
+import argparse, json, subprocess, tempfile
 ROOT=Path(__file__).resolve().parents[1]
 def main():
+    parser = argparse.ArgumentParser(description="失败边界测试")
+    parser.parse_args()
     with tempfile.TemporaryDirectory() as td:
         root=Path(td); (root/'skills/valid').mkdir(parents=True); (root/'skills/valid/SKILL.md').write_text('---\nname: valid\ndescription: Valid test skill. Use for boundary tests.\n---\n\nDo the test.\n'); (root/'skills/invalid').mkdir(parents=True); (root/'skills/invalid/SKILL.md').write_text('not frontmatter')
         (root/'plugin.json').write_text(json.dumps({'$schema':'https://agent-plugins.org/schemas/1.0.0/plugin.schema.json','name':'boundary-test'}))
