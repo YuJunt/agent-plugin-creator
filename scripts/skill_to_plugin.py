@@ -95,6 +95,38 @@ python3 scripts/validate_plugin.py .
 python3 scripts/audit_plugin.py .
 ```
 
+## 安全检查清单（发布前必读）
+
+本插件由现有 Skill 转化生成，原始技能可能存在以下安全问题，**发布前必须检查**：
+
+### 1. 硬编码密钥/令牌
+- [ ] 检查所有 Python 文件中是否有硬编码的 API key、token、secret、password
+- [ ] 如有，使用 `--sanitize` 选项重新转化，或手动替换为环境变量引用
+- [ ] 示例：`api_key = "xxx"` → `api_key = os.environ.get("API_KEY", "")`
+
+### 2. 危险代码
+- [ ] 检查是否使用了 `eval()`、`exec()`、`shell=True` 等危险调用
+- [ ] 如有，评估是否可以替换为更安全的实现
+- [ ] 如必须使用，添加严格的输入验证
+
+### 3. 数据泄露
+- [ ] 检查是否有将对话内容、用户数据发送到外部的代码
+- [ ] 检查日志中是否打印了敏感信息（密钥、密码、用户隐私）
+
+### 4. 路径安全
+- [ ] 检查文件操作是否存在路径穿越风险（`../`）
+- [ ] 检查是否限制了文件操作的根目录
+
+### 5. 输入验证
+- [ ] 检查所有工具参数是否有类型和范围验证
+- [ ] 检查是否处理了异常输入
+
+**自动检查命令：**
+```bash
+python3 scripts/audit_plugin.py .  # 安全审计
+python3 scripts/check_completion.py .  # 完成度检查
+```
+
 ## 打包
 
 ```bash
@@ -105,12 +137,15 @@ python3 scripts/package_plugin.py . --output ./dist
 
 本插件由现有 Skill 正向封装生成，原始 Skill 内容完整保留在 `skills/{skill_name}/` 下。
 如需添加 MCP 服务器，请参考 `create_mcp_server.py`。
+
+**注意：** 安全审计发现的问题是原始技能本身的问题，转化工具不会自动修改技能内容（除 `--sanitize` 选项外），请手动修复后再发布。
 """
 
 
 def skill_to_plugin(skill_dir: Path, output_dir: Path, name: str = "",
                     version: str = "0.1.0", description: str = "",
-                    force: bool = False, run_validate: bool = True) -> dict:
+                    force: bool = False, run_validate: bool = True,
+                    run_audit: bool = True, sanitize: bool = False) -> dict:
     """
     将现有 Skill 转化为 Agent Plugin
 
@@ -122,6 +157,8 @@ def skill_to_plugin(skill_dir: Path, output_dir: Path, name: str = "",
         description: 插件描述（默认从技能 description 推断）
         force: 是否覆盖已有目录
         run_validate: 是否自动运行验证
+        run_audit: 是否自动运行安全审计
+        sanitize: 是否自动净化（替换硬编码密钥为环境变量引用）
 
     Returns:
         转化结果字典
@@ -134,6 +171,14 @@ def skill_to_plugin(skill_dir: Path, output_dir: Path, name: str = "",
         "skill_name": "",
         "files_copied": 0,
         "validate_passed": None,
+        "audit_passed": None,
+        "audit_critical": 0,
+        "audit_high": 0,
+        "audit_medium": 0,
+        "audit_low": 0,
+        "audit_issues": [],
+        "sanitized": False,
+        "secrets_replaced": 0,
         "errors": [],
         "warnings": []
     }
@@ -214,6 +259,14 @@ def skill_to_plugin(skill_dir: Path, output_dir: Path, name: str = "",
 
     result["files_copied"] = files_copied
 
+    # 6.5 可选：自动净化（替换硬编码密钥为环境变量引用）
+    if sanitize:
+        secrets_replaced = _sanitize_secrets(skills_dir)
+        result["sanitized"] = True
+        result["secrets_replaced"] = secrets_replaced
+        if secrets_replaced > 0:
+            result["warnings"].append(f"已自动净化 {secrets_replaced} 处硬编码密钥，替换为环境变量引用，请检查环境变量配置")
+
     # 6. 生成 plugin.json
     plugin_json = generate_plugin_json(plugin_name, version, plugin_description)
     (output_dir / "plugin.json").write_text(
@@ -244,8 +297,114 @@ def skill_to_plugin(skill_dir: Path, output_dir: Path, name: str = "",
         except Exception as e:
             result["warnings"].append(f"验证执行失败: {e}")
 
+    # 9. 自动安全审计
+    if run_audit:
+        try:
+            script_dir = Path(__file__).resolve().parent
+            audit_script = script_dir / "audit_plugin.py"
+            if audit_script.exists():
+                import subprocess
+                proc = subprocess.run(
+                    [sys.executable, str(audit_script), str(output_dir)],
+                    capture_output=True, text=True, timeout=60
+                )
+                # 解析审计结果
+                audit_output = proc.stdout + proc.stderr
+                import re
+                critical_match = re.search(r"critical.*?:\s*(\d+)", audit_output, re.IGNORECASE)
+                high_match = re.search(r"high.*?:\s*(\d+)", audit_output, re.IGNORECASE)
+                medium_match = re.search(r"medium.*?:\s*(\d+)", audit_output, re.IGNORECASE)
+                low_match = re.search(r"low.*?:\s*(\d+)", audit_output, re.IGNORECASE)
+
+                result["audit_critical"] = int(critical_match.group(1)) if critical_match else 0
+                result["audit_high"] = int(high_match.group(1)) if high_match else 0
+                result["audit_medium"] = int(medium_match.group(1)) if medium_match else 0
+                result["audit_low"] = int(low_match.group(1)) if low_match else 0
+                result["audit_passed"] = (result["audit_critical"] == 0 and result["audit_high"] == 0)
+
+                # 提取前 5 个具体问题
+                issues = []
+                for line in audit_output.split("\n"):
+                    if any(kw in line for kw in ["CRITICAL", "HIGH", "[CRITICAL]", "[HIGH]"]):
+                        issues.append(line.strip())
+                        if len(issues) >= 5:
+                            break
+                result["audit_issues"] = issues
+
+                if not result["audit_passed"]:
+                    result["warnings"].append(
+                        f"安全审计发现 {result['audit_critical']} 个 critical、{result['audit_high']} 个 high 问题，"
+                        f"这些是原始技能本身的安全问题，建议修复后再发布"
+                    )
+            else:
+                result["warnings"].append("找不到 audit_plugin.py，跳过安全审计")
+        except Exception as e:
+            result["warnings"].append(f"安全审计执行失败: {e}")
+
     result["success"] = len(result["errors"]) == 0
     return result
+
+
+def _sanitize_secrets(skills_dir: Path) -> int:
+    """
+    自动净化硬编码密钥，替换为环境变量引用
+
+    检测常见的硬编码密钥模式：
+    - API key: api_key = "xxx", API_KEY = "xxx"
+    - Token: token = "xxx", TOKEN = "xxx"
+    - Secret: secret = "xxx", SECRET = "xxx"
+    - Password: password = "xxx", PASSWORD = "xxx"
+
+    替换为：os.environ.get("XXX")
+
+    Returns:
+        替换的密钥数量
+    """
+    import re
+
+    replaced = 0
+    # 常见的密钥变量名模式
+    secret_patterns = [
+        (r'(api_key\s*=\s*["\'])([^"\']+)(["\'])', 'API_KEY'),
+        (r'(API_KEY\s*=\s*["\'])([^"\']+)(["\'])', 'API_KEY'),
+        (r'(token\s*=\s*["\'])([^"\']+)(["\'])', 'TOKEN'),
+        (r'(TOKEN\s*=\s*["\'])([^"\']+)(["\'])', 'TOKEN'),
+        (r'(secret\s*=\s*["\'])([^"\']+)(["\'])', 'SECRET'),
+        (r'(SECRET\s*=\s*["\'])([^"\']+)(["\'])', 'SECRET'),
+        (r'(password\s*=\s*["\'])([^"\']+)(["\'])', 'PASSWORD'),
+        (r'(PASSWORD\s*=\s*["\'])([^"\']+)(["\'])', 'PASSWORD'),
+        (r'(app_id\s*=\s*["\'])([^"\']+)(["\'])', 'APP_ID'),
+        (r'(APP_ID\s*=\s*["\'])([^"\']+)(["\'])', 'APP_ID'),
+        (r'(app_secret\s*=\s*["\'])([^"\']+)(["\'])', 'APP_SECRET'),
+        (r'(APP_SECRET\s*=\s*["\'])([^"\']+)(["\'])', 'APP_SECRET'),
+    ]
+
+    # 只处理 Python 文件
+    for py_file in skills_dir.rglob("*.py"):
+        if "__pycache__" in str(py_file):
+            continue
+        try:
+            content = py_file.read_text(encoding="utf-8")
+            original_content = content
+
+            for pattern, env_name in secret_patterns:
+                def replace_func(match, env_name=env_name):
+                    nonlocal replaced
+                    replaced += 1
+                    # 提取变量名（去掉原始引号，直接赋值环境变量引用）
+                    var_part = match.group(1).split('=')[0].strip() + ' = '
+                    return f'{var_part}os.environ.get("{env_name}", "")'
+                content = re.sub(pattern, replace_func, content)
+
+            if content != original_content:
+                # 确保导入了 os
+                if "import os" not in content and "from os" not in content:
+                    content = "import os\n" + content
+                py_file.write_text(content, encoding="utf-8")
+        except Exception:
+            continue
+
+    return replaced
 
 
 def print_result(result: dict):
@@ -268,6 +427,20 @@ def print_result(result: dict):
     if result["validate_passed"] is not None:
         status = "✅ 通过" if result["validate_passed"] else "⚠️ 未完全通过"
         print(f"   自动验证: {status}")
+
+    if result["audit_passed"] is not None:
+        if result["audit_passed"]:
+            print(f"   安全审计: ✅ 通过（0 critical, 0 high）")
+        else:
+            print(f"   安全审计: ⚠️ 发现问题（{result['audit_critical']} critical, {result['audit_high']} high）")
+            print(f"             这些是原始技能本身的安全问题，建议修复后再发布")
+            if result["audit_issues"]:
+                print(f"             主要问题:")
+                for issue in result["audit_issues"][:3]:
+                    print(f"               - {issue[:80]}")
+
+    if result.get("sanitized"):
+        print(f"   自动净化: ✅ 已替换 {result['secrets_replaced']} 处硬编码密钥为环境变量引用")
 
     if result["warnings"]:
         print(f"\n⚠️  警告 ({len(result['warnings'])}):")
@@ -300,6 +473,8 @@ def main():
     parser.add_argument("--description", help="插件描述（默认从技能 description 推断）")
     parser.add_argument("--force", "-f", action="store_true", help="覆盖已有输出目录")
     parser.add_argument("--no-validate", action="store_true", help="跳过自动验证")
+    parser.add_argument("--no-audit", action="store_true", help="跳过自动安全审计")
+    parser.add_argument("--sanitize", action="store_true", help="自动净化：替换硬编码密钥为环境变量引用")
     parser.add_argument("--json", action="store_true", help="JSON 格式输出")
     args = parser.parse_args()
 
@@ -318,7 +493,9 @@ def main():
         version=args.version,
         description=args.description,
         force=args.force,
-        run_validate=not args.no_validate
+        run_validate=not args.no_validate,
+        run_audit=not args.no_audit,
+        sanitize=args.sanitize
     )
 
     if args.json:

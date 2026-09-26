@@ -325,7 +325,9 @@ def cmd_wrap(args):
         version=args.version,
         description=args.description,
         force=args.force,
-        run_validate=not args.no_validate
+        run_validate=not args.no_validate,
+        run_audit=not getattr(args, 'no_audit', False),
+        sanitize=getattr(args, 'sanitize', False)
     )
 
     if args.json:
@@ -374,6 +376,8 @@ def main():
     p_wrap.add_argument("--description", help="插件描述（默认从技能 description 推断）")
     p_wrap.add_argument("--force", "-f", action="store_true", help="覆盖已有输出目录")
     p_wrap.add_argument("--no-validate", action="store_true", help="跳过自动验证")
+    p_wrap.add_argument("--no-audit", action="store_true", help="跳过自动安全审计")
+    p_wrap.add_argument("--sanitize", action="store_true", help="自动净化：替换硬编码密钥为环境变量引用")
     p_wrap.add_argument("--json", action="store_true", help="JSON 格式输出")
 
     # mcp - 生成 MCP 服务器
