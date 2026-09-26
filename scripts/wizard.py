@@ -655,6 +655,8 @@ def main():
         "minimal": "minimal-skill-only",
         "code-review": "minimal-skill-only",
         "customer-support": "customer-support.triage",
+        "data-analysis": "data-analysis",
+        "knowledge-base": "knowledge-base",
         "full-stack": "multi-skill-ts-mcp",
     }
 

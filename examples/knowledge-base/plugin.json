@@ -1,0 +1,9 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "knowledge-base",
+  "version": "1.0.0",
+  "description": "知识库检索与问答插件。提供文档入库、语义检索、智能问答能力。当用户需要构建知识库、从文档中查找信息、基于知识库回答问题时使用。",
+  "author": {"name": "Agent Plugin Creator", "email": "example@example.com"},
+  "license": "MIT",
+  "keywords": ["knowledge-base", "rag", "search", "qa", "embedding"]
+}
