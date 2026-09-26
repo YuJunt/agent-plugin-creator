@@ -14,7 +14,7 @@ def main():
     parser.add_argument("skill_root", help="技能根目录路径")
     args = parser.parse_args()
     root=Path(args.skill_root).resolve(); errors=[]; warnings=[]; evidence=[]
-    required=['SKILL.md','references/evaluation-protocol.md','assets/schemas/1.0.0/plugin.schema.json','assets/schemas/1.0.0/mcp.schema.json','scripts/validate_plugin.py','scripts/quality_report.py','scripts/run_trigger_eval.py','scripts/run_edge_eval.py','scripts/build_release.py','references/permission-matrix.md','scripts/release_decision.py']
+    required=['SKILL.md','references/quality.md','assets/schemas/1.0.0/plugin.schema.json','assets/schemas/1.0.0/mcp.schema.json','scripts/validate_plugin.py','scripts/run_trigger_eval.py','scripts/run_edge_eval.py','references/plugin-specification.md','references/workflows.md']
     for rel in required:
         p=root/rel
         if not p.is_file(): errors.append(f'missing required release file: {rel}')

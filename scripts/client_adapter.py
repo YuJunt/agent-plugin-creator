@@ -33,6 +33,7 @@ import json
 import shutil
 import sys
 from pathlib import Path
+from _common import load_plugin_json
 
 CLIENT_CONFIGS = {
     "claude": {
@@ -99,22 +100,6 @@ CLIENT_CONFIGS = {
 
 SUPPORTED_TARGETS = list(CLIENT_CONFIGS.keys())
 
-
-def load_plugin_json(plugin_dir: Path) -> dict:
-    """加载 plugin.json"""
-    plugin_json = plugin_dir / "plugin.json"
-    if not plugin_json.exists():
-        print(f"错误: 缺少 plugin.json: {plugin_json}", file=sys.stderr)
-        sys.exit(1)
-    try:
-        plugin = json.loads(plugin_json.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as e:
-        print(f"错误: plugin.json 不是有效 JSON: {e}", file=sys.stderr)
-        sys.exit(1)
-    if "name" not in plugin:
-        print("错误: plugin.json 缺少必需字段 name", file=sys.stderr)
-        sys.exit(1)
-    return plugin
 
 
 def extract_skill_description(skill_md: Path) -> str:

@@ -264,3 +264,212 @@ audit_plugin.py 基于正则匹配，能检出常见漏洞模式，但**不能�
    ```
 
 **建议**：安全审计是第一道防线，关键插件仍需人工审查代码，或使用专业 SAST 工具做深度分析。
+# Client Conformance Test Template
+
+Agent Plugins v1 的客户端一致性不能由包结构验证器代替。为每个目标客户端记录真实版本、操作系统、安装方式、插件来源和完整测试日志。
+
+| 客户端 | 版本 | OS | 安装成功 | plugin.json 加载 | Skill 发现 | MCP 发现 | MCP handshake | 单组件失败隔离 | 扩展行为 | 证据 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `<client>` | `<version>` | `<os>` | unknown | unknown | unknown | unknown | unknown | unknown | unknown | `<log path>` |
+
+## 必测场景
+
+### 基础加载
+
+安装一个只含 plugin.json 的最小插件，确认客户端接受 canonical schema 和 name。安装包含一个 Skill 的插件，确认仅发现 `skills/` 的直接子目录。安装包含一个 MCP server 的插件，确认只从根 `mcp.json` 读取配置。
+
+### 组件隔离
+
+在同一个插件中放置一个有效 Skill 和一个无效 Skill；放置一个有效 MCP server 和一个无效 server。客户端应跳过无效组件并继续加载其他组件，不应把单组件失败升级为整包失败。
+
+### 运行时失败
+
+让 server 启动失败、握手失败、认证失败和工具调用失败，确认其他插件组件仍可用，并且客户端给出可诊断的错误。
+
+### 版本和扩展
+
+使 plugin.json 与 mcp.json schema 版本不一致，确认 MCP 被禁用但其他组件按规范处理。加入客户端公开的 reverse-domain extension，确认目标客户端读取；在不支持该 namespace 的客户端中，确认便携核心仍可加载。
+
+## 证据要求
+
+截图不能替代文本日志。每个测试应保存客户端版本、安装命令、插件 SHA256、发现列表、错误日志和结果摘要。未执行的测试必须写 `not tested`，不得写 `compatible`。
+
+---
+
+# Gotchas（踩过的坑）
+# Gotchas（踩过的坑）
+
+> 这些是开发过程中实际踩过的坑，每个都有症状→修正→原因。遇到对应情况必须按修正做。
+
+## Gotchas（踩过的坑，最高优先级）
+
+> 这些是开发过程中实际踩过的坑，每个都有**症状→修正→原因**。遇到对应情况必须按修正做。
+
+### 1. MCP 服务器写完再验，结果全是错
+- **症状**：写完所有 MCP 工具代码后运行，握手失败、工具不响应、协议解析错误，不知道哪里出问题
+- **修正**：生成 MCP 服务器后**立即跑 `test_mcp_handshake.py`**，跑不通就停下来修，不要继续往下写。每加一个工具就验一次。
+- **原因**：MCP 协议对 stdout/stderr 分离、JSON-RPC 格式要求严格，早期错误会被后续代码掩盖，越早发现越容易定位。
+
+### 2. stdio 服务器打印调试信息到 stdout
+- **症状**：MCP 握手失败，报 "Invalid JSON-RPC response" 或 "Unexpected token"，但代码看起来没问题
+- **修正**：所有调试信息必须打到 `stderr`（`print(..., file=sys.stderr)`），stdout 是 JSON-RPC 专用通道，不能有任何额外输出。
+- **原因**：stdio 传输模式下，stdout 的每一行都会被客户端当作 JSON-RPC 响应解析，调试信息会破坏协议格式。
+
+### 3. mcp.json 的 command 写成 shell 字符串
+- **症状**：`validate_plugin.py` 报错 "command must be a single executable token"，或客户端启动服务器失败
+- **修正**：`command` 必须是单个可执行文件名（如 `python3`、`node`），参数放在 `args` 数组里。禁止 `bash -c "..."` 或带空格的命令。
+- **原因**：Agent Plugins 规范要求 command 是单一可执行 token，防止 shell 注入和跨平台兼容性问题。
+
+### 4. mcp.json 里的路径不以 ./ 开头
+- **症状**：`validate_plugin.py` 报路径安全错误，或客户端找不到服务器文件
+- **修正**：`command` 如果含 `/`（绝对路径或子目录），必须以 `./` 开头（如 `./bin/server`）。插件内所有相对路径都以 `./` 开头。
+- **原因**：路径安全检查防止路径穿越攻击，`./` 前缀明确表示"插件根目录内"，避免被解析为系统路径。
+
+### 5. wizard 生成的骨架直接当成品用
+- **症状**：生成的插件 SKILL.md 里全是"第一步/第二步"占位符，description 没有触发词，技能永远不触发
+- **修正**：wizard 生成的是**骨架不是成品**。必须重写 SKILL.md 的 description（含三要素：做什么+什么时候用+触发词）、工作流步骤、Gotchas。
+- **原因**：wizard 只负责生成目录结构和占位内容，业务逻辑和触发场景只有用户知道，无法自动生成。
+
+### 6. 反向封装后用 validate_plugin 验证
+- **症状**：`plugin_to_skill.py` 生成的产物用 `validate_plugin.py` 验证，报"缺少 plugin.json"
+- **修正**：反向封装生成的是**普通 Skill**（无 plugin.json），要用 `validate_skill.py` 验证，不是 `validate_plugin.py`。
+- **原因**：反向封装的目的就是把 Plugin 转成不支持 Plugin 的平台也能用的 Skill，结构自然不同。
+
+### 7. audit_plugin 没检出动态调用的危险代码
+- **症状**：代码里有 `getattr(os, "system")(cmd)` 或 `eval(__import__('base64').b64decode(...))`，但 audit_plugin 没报
+- **修正**：audit_plugin 基于正则，**不能检出动态调用、混淆字符串、嵌套导入**。高危插件需要人工代码审查，不能只依赖自动化审计。
+- **原因**：静态正则分析无法处理运行时动态解析的代码，这是所有静态分析工具的共同局限。
+
+### 8. 反向封装的输出目录名与 skill name 不一致
+- **症状**：`plugin_to_skill.py --output ./my-skill` 生成后，`validate_skill.py` 报"目录名与 skill name 不一致"
+- **修正**：`--output` 目录名必须和生成的 skill name 一致（插件名中的点会转成连字符）。用 `--json` 输出查看生成的 skill_name，再指定对应目录名。
+- **原因**：agentskills.io 规范要求 skill 目录名与 frontmatter 的 name 字段完全一致，这是平台发现技能的依据。
+
+### 9. 插件包含 hooks/commands/agents 等非便携组件
+- **症状**：把旧客户端插件的 hooks、commands、自定义 agent 塞进 plugin.json，`validate_plugin.py` 报"未知顶层字段"
+- **修正**：便携核心只包含 skills/ + mcp.json + servers/。hooks、commands、agents、LSP、UI 等客户端专属组件放在 `com.<client>/` 扩展目录里，或用 `client_adapter.py` 生成。
+- **原因**：Agent Plugins 规范的便携核心刻意限制了组件类型，确保跨客户端可移植；客户端专属能力通过扩展机制提供。
+
+
+---
+
+# 错误码手册
+# 错误码系统参考手册
+
+> 本文档列出 agent-plugin-creator 所有标准化错误码（共 31 个），按类别分组。
+> 运行 `python3 scripts/errors.py --list` 获取最新列表，`python3 scripts/errors.py --lookup E1001` 查询单个错误码。
+
+## 错误码命名规则
+
+- 格式：`E` + 4位数字（如 `E1001`）
+- 千位表示类别：
+  - `1xxx`：输入/参数错误
+  - `2xxx`：规范/验证错误
+  - `3xxx`：安全错误
+  - `4xxx`：MCP 错误
+  - `5xxx`：构建/发布错误
+  - `6xxx`：外部依赖/环境错误
+  - `9xxx`：内部/未知错误
+
+---
+
+## 1xxx — 输入/参数错误（7 个）
+
+| 错误码 | 名称 | 修复建议 |
+|--------|------|---------|
+| E1001 | 无效参数 | 检查命令行参数是否正确，用 `--help` 查看用法 |
+| E1002 | 缺少必需参数 | 查看 `--help` 获取完整参数列表，补充缺失参数 |
+| E1003 | 路径无效 | 检查文件/目录路径是否存在且可访问 |
+| E1004 | 文件不存在 | 确认文件路径正确，或先创建该文件 |
+| E1005 | 目录不存在 | 确认目录路径正确，或先创建该目录 |
+| E1006 | JSON 格式无效 | 检查 JSON 语法，使用 `python3 -m json.tool` 或 jsonlint 验证 |
+| E1007 | 名称不符合规范 | 名称只能包含 Unicode 小写字母、数字、连字符（不允许点/大写/特殊字符） |
+
+## 2xxx — 规范/验证错误（6 个）
+
+| 错误码 | 名称 | 修复建议 |
+|--------|------|---------|
+| E2001 | 验证失败 | 运行 `python3 scripts/validate_plugin.py <插件目录>` 查看详细错误 |
+| E2002 | Schema 版本不匹配 | 确保 plugin.json 和 mcp.json 的 `$schema` 版本一致（都为 1.0.0 或都为 1.1.0） |
+| E2003 | 缺少必需字段 | 检查规范文档，补充 plugin.json 的 `name`、`$schema` 等必需字段 |
+| E2004 | 未知字段 | plugin.json 只允许规范定义的字段，自定义字段移到 `extensions` 下或客户端扩展目录 |
+| E2005 | 名称与目录不一致 | plugin name 必须与插件目录名完全一致；skill name 必须与 skill 目录名一致 |
+| E2006 | 路径不安全 | 插件内所有相对路径必须以 `./` 开头，不能包含 `../` 逃逸出插件根目录 |
+
+## 3xxx — 安全错误（4 个）
+
+| 错误码 | 名称 | 修复建议 |
+|--------|------|---------|
+| E3001 | 安全审计失败 | 运行 `python3 scripts/audit_plugin.py <插件目录> --severity high` 查看详细问题 |
+| E3002 | 检测到硬编码密钥 | 将 API key、密码、token 移到环境变量或客户端配置中，不要写在代码里 |
+| E3003 | 检测到危险代码 | 移除 `eval()`、`exec()`、`shell=True`、`os.system()`、`pickle.loads()` 等危险调用 |
+| E3004 | 路径穿越风险 | 检查文件操作路径，防止用户输入构造 `../` 逃逸出预期目录 |
+
+## 4xxx — MCP 错误（4 个）
+
+| 错误码 | 名称 | 修复建议 |
+|--------|------|---------|
+| E4001 | MCP 握手失败 | 检查服务器启动命令和参数，确保 stdio 传输正确，调试信息打到 stderr 而非 stdout |
+| E4002 | MCP 工具调用失败 | 检查工具名称和参数是否正确，用 `test_mcp_tools.py` 逐个验证工具 |
+| E4003 | MCP 服务器不存在 | 检查 mcp.json 中的服务器配置，确认 command/args 路径正确 |
+| E4004 | 无效的 MCP 传输类型 | 支持 `stdio`（本地子进程）和 `streamable-http`（远程 HTTP），不支持其他类型 |
+
+## 5xxx — 构建/发布错误（4 个）
+
+| 错误码 | 名称 | 修复建议 |
+|--------|------|---------|
+| E5001 | 构建失败 | 检查构建日志，修复编译/类型错误后重试 |
+| E5002 | 打包失败 | 检查插件结构，确保 plugin.json 等必需文件存在，用 `validate_plugin.py` 验证 |
+| E5003 | 缺少依赖 | 运行 `python3 scripts/manage_deps.py <server_dir> --check` 检查并安装缺失依赖 |
+| E5004 | 版本冲突 | 检查 plugin.json、CHANGELOG.md、provenance.json 的版本号是否一致 |
+
+## 6xxx — 外部依赖/环境错误（4 个）
+
+| 错误码 | 名称 | 修复建议 |
+|--------|------|---------|
+| E6001 | 外部工具执行失败 | 检查外部工具（如 docker、npm、git）是否安装且可执行 |
+| E6002 | Git 操作失败 | 检查 Git 状态、权限和远程仓库配置，确保有推送权限 |
+| E6003 | 网络错误 | 检查网络连接和代理设置，确认目标地址可访问 |
+| E6004 | 操作超时 | 增加 `--timeout` 参数，或检查目标服务是否响应 |
+
+## 9xxx — 内部/未知错误（2 个）
+
+| 错误码 | 名称 | 修复建议 |
+|--------|------|---------|
+| E9001 | 内部错误 | 这可能是技能本身的 bug，请在 GitHub 提交 issue 并附上复现步骤 |
+| E9999 | 未知错误 | 查看详细错误信息和堆栈跟踪，根据具体内容排查 |
+
+---
+
+## 使用示例
+
+```bash
+# 列出所有错误码
+python3 scripts/errors.py --list
+
+# 查询单个错误码
+python3 scripts/errors.py --lookup E3002
+
+# 按类别筛选
+python3 scripts/errors.py --category security
+
+# JSON 格式输出（便于脚本解析）
+python3 scripts/errors.py --list --json
+```
+
+## 错误码与脚本对应关系
+
+| 脚本 | 主要可能触发的错误码 |
+|------|---------------------|
+| `validate_plugin.py` | E2001-E2006, E1006 |
+| `validate_skill.py` | E2001, E2005, E1007 |
+| `audit_plugin.py` | E3001-E3004 |
+| `test_mcp_handshake.py` | E4001, E4003, E6004 |
+| `test_mcp_tools.py` | E4002, E4001 |
+| `benchmark_mcp.py` | E4001, E4002, E6004 |
+| `package_plugin.py` | E5002, E2001 |
+| `build_release.py` | E5001, E5002 |
+| `create_mcp_server.py` | E1001, E1006, E5003 |
+| `wizard.py` | E1001-E1007, E2001 |
+| `dockerize.py` | E6001, E5001 |
+| `manage_deps.py` | E5003, E1003 |

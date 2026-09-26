@@ -1,8 +1,0 @@
-{
-  "baseline_overhead_ms": 0.01,
-  "json_parse_ms": 4.28,
-  "file_read_50_files_ms": 219.33,
-  "regex_match_ms": 5.29,
-  "timestamp": "2026-09-26 16:31:29",
-  "python_version": "3.12.11"
-}

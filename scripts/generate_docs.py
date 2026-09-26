@@ -25,19 +25,8 @@ import json
 import re
 import sys
 from pathlib import Path
+from _common import load_plugin_json
 
-
-def load_plugin_json(plugin_dir: Path) -> dict:
-    """加载 plugin.json"""
-    plugin_json = plugin_dir / "plugin.json"
-    if not plugin_json.exists():
-        print(f"错误: 缺少 plugin.json: {plugin_json}", file=sys.stderr)
-        sys.exit(1)
-    try:
-        return json.loads(plugin_json.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as e:
-        print(f"错误: plugin.json 不是有效 JSON: {e}", file=sys.stderr)
-        sys.exit(1)
 
 
 def parse_skill_md(skill_md_path: Path) -> dict:

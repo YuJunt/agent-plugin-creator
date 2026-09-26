@@ -22,19 +22,8 @@ import sys
 import zipfile
 from datetime import datetime, timezone
 from pathlib import Path
+from _common import load_plugin_json
 
-
-def load_plugin_json(plugin_dir: Path) -> dict:
-    """加载 plugin.json"""
-    plugin_json = plugin_dir / "plugin.json"
-    if not plugin_json.exists():
-        print(f"错误: 缺少 plugin.json: {plugin_json}", file=sys.stderr)
-        sys.exit(1)
-    try:
-        return json.loads(plugin_json.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as e:
-        print(f"错误: plugin.json 不是有效 JSON: {e}", file=sys.stderr)
-        sys.exit(1)
 
 
 def calculate_file_hash(file_path: Path, algorithm: str = "sha256") -> str:
@@ -51,7 +40,7 @@ def calculate_file_hash(file_path: Path, algorithm: str = "sha256") -> str:
 
 def collect_plugin_files(plugin_dir: Path) -> list:
     """收集插件中的所有文件（排除缓存、临时文件等）"""
-    exclude_dirs = {"__pycache__", ".git", "node_modules", ".DS_Store", "dist", "build"}
+    exclude_dirs = {"__pycache__", ".git", "node_modules", ".DS_Store", "dist", "build", "tests", "htmlcov", ".pytest_cache", ".github", "docs"}
     exclude_extensions = {".pyc", ".pyo", ".swp", ".swo", "~"}
 
     files = []

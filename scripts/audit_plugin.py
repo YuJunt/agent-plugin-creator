@@ -126,6 +126,87 @@ TOOL_POISONING_PATTERNS = [
      "工具描述试图发送对话内容到外部（数据泄露）", "critical"),
 ]
 
+# 文档/技能提示注入模式（Document Prompt Injection）
+# 检测 SKILL.md、README 等文档中的提示注入，包括中英文模式
+# 参考: OWASP Agentic Skills Top 10, Snyk ToxicSkills 报告
+DOCUMENT_PROMPT_INJECTION_PATTERNS = [
+    # === 经典英文 Prompt Injection ===
+    (r"ignore\s+(?:all\s+)?(?:previous|prior|above|earlier|all\s+previous)\s+(?:instructions?|prompts?|rules?|context)",
+     "文档包含'忽略之前指令'模式（典型 prompt injection）", "critical"),
+    (r"forget\s+(?:all\s+)?(?:previous|prior|your|above)\s+(?:instructions?|prompts?|rules?)",
+     "文档包含'忘记之前指令'模式（典型 prompt injection）", "critical"),
+    (r"disregard\s+(?:all\s+)?(?:previous|prior)\s+(?:instructions?|prompts?)",
+     "文档包含'无视之前指令'模式（典型 prompt injection）", "critical"),
+    
+    # === 中文 Prompt Injection ===
+    (r"忽略(?:所有|之前|上述|前面的)?(?:指令|提示|规则|系统提示)",
+     "文档包含中文'忽略指令'模式（prompt injection）", "critical"),
+    (r"忘记(?:所有|之前|上述)?(?:指令|提示|规则)",
+     "文档包含中文'忘记指令'模式（prompt injection）", "critical"),
+    (r"无视(?:所有|之前)?(?:指令|提示|规则)",
+     "文档包含中文'无视指令'模式（prompt injection）", "critical"),
+    (r"不要(?:遵守|遵循|管)(?:之前|上述|系统)?(?:指令|提示|规则)",
+     "文档包含中文'不要遵守指令'模式（prompt injection）", "critical"),
+    
+    # === 角色劫持（中英文）===
+    (r"you\s+(?:are\s+now|must\s+now|should\s+now|have\s+to)\s+(?:act|be|pretend|become)\s+",
+     "文档包含角色劫持模式（'你现在是...'）", "high"),
+    (r"你现在是|你必须是|你应该是|你要扮演|你的新身份",
+     "文档包含中文角色劫持模式", "high"),
+    (r"从现在开始|从此以后|接下来你",
+     "文档包含'从现在开始'模式（可能试图重置上下文）", "medium"),
+    (r"new\s+(?:persona|identity|character|role|system\s+prompt)",
+     "文档包含新人格/身份模式（角色劫持）", "high"),
+    
+    # === 系统提示覆盖（中英文）===
+    (r"system\s*prompt|system\s*message|override\s*system|developer\s*message",
+     "文档提及系统提示（可能试图覆盖系统指令）", "high"),
+    (r"系统提示|系统消息|开发者提示|覆盖系统|重置系统",
+     "文档包含中文系统提示覆盖模式", "high"),
+    (r"^(?:system|developer|assistant|human|user)\s*:",
+     "文档伪装成系统/开发者/助手消息（上下文欺骗）", "critical"),
+    
+    # === 隐瞒信息（中英文）===
+    (r"do\s+(?:not|n't|never)\s+(?:tell|inform|mention|disclose|reveal)\s+(?:the\s+)?(?:user|human|anyone)",
+     "文档要求对用户隐瞒信息（可疑行为）", "high"),
+    (r"不要告诉|不要告知|不要透露|不要提及|隐瞒|保密",
+     "文档包含中文隐瞒信息模式", "high"),
+    
+    # === 自动执行绕过确认（中英文）===
+    (r"always\s+(?:run|execute|perform|do)\s+(?:this|the|it)\s+(?:without|no|skipping)\s+(?:asking|confirm|confirmation|user\s+input)",
+     "文档要求自动执行无需确认（可能绕过 HITL）", "medium"),
+    (r"无需确认|不用问|直接执行|自动执行|不要询问",
+     "文档包含中文自动执行绕过确认模式", "medium"),
+    
+    # === 修改对话状态（中英文）===
+    (r"(?:modify|alter|change|delete|clear)\s+(?:the\s+)?(?:conversation|history|context|state|memory|chat)",
+     "文档试图修改对话历史/上下文状态", "critical"),
+    (r"(?:修改|删除|清除|清空)(?:对话|历史|上下文|状态|记忆)",
+     "文档包含中文修改对话状态模式", "critical"),
+    
+    # === 数据泄露（中英文）===
+    (r"exfiltrat|steal|leak|send\s+(?:data|info|content|secrets|keys|credentials)\s+to",
+     "文档包含数据泄露/窃取模式", "critical"),
+    (r"泄露|窃取|外传|发送(?:数据|信息|密钥|密码|凭证)到",
+     "文档包含中文数据泄露模式", "critical"),
+    (r"send\s+(?:the\s+)?(?:conversation|chat|messages?|history|context)\s+(?:to|via)\s+",
+     "文档试图发送对话内容到外部（数据泄露）", "critical"),
+    
+    # === 隐蔽通道 ===
+    (r"[​-‍]",
+     "文档包含 Unicode 零宽字符（隐蔽通道）", "high"),
+    (r"base64\.b64decode|atob\s*\(|decode\s*\(\s*['\"][A-Za-z0-9+/=]{20,}",
+     "文档包含 base64 解码（可能隐藏指令）", "medium"),
+    
+    # === 指令注入变体 ===
+    (r"new\s+instructions?\s*:|new\s+rules?\s*:|updated\s+instructions?\s*:",
+     "文档引入新指令（可能覆盖原有规则）", "high"),
+    (r"重要(?:通知|提示|更新|变更)[:：]",
+     "文档包含中文'重要通知'模式（可能试图注入新指令）", "medium"),
+    (r"urgent|important|critical\s+(?:update|notice|instruction)",
+     "文档使用紧急/重要词汇引导（社会工程学）", "low"),
+]
+
 
 class AuditResult:
     def __init__(self):
@@ -223,6 +304,22 @@ def scan_code_file(file_path: Path, rel_path: str, result: AuditResult):
                     if stripped.startswith("#") or stripped.startswith("//") or stripped.startswith("*"):
                         continue
                     result.add_issue(severity, "tool_poisoning", rel_path, i, message, line)
+    
+    # 扫描文档/技能提示注入（Document Prompt Injection）
+    # 扫描 SKILL.md、README.md 等文档文件
+    if rel_path.endswith(".md") or "SKILL" in rel_path or "skill" in rel_path.lower():
+        for pattern, message, severity in DOCUMENT_PROMPT_INJECTION_PATTERNS:
+            for i, line in enumerate(lines, 1):
+                if re.search(pattern, line, re.IGNORECASE):
+                    # 排除安全审计文档本身（它会列举这些模式作为检测规则）
+                    stripped = line.strip()
+                    if "audit" in rel_path.lower() or "security" in rel_path.lower():
+                        continue
+                    # 排除明显的示例/说明行
+                    if stripped.startswith(">") or stripped.startswith("- ") or stripped.startswith("* "):
+                        # 引用和列表项也可能包含注入，降低严重级别
+                        severity = "low" if severity == "medium" else severity
+                    result.add_issue(severity, "document_prompt_injection", rel_path, i, message, line)
 
 
 def audit_mcp_json(mcp_path: Path, rel_path: str, result: AuditResult):

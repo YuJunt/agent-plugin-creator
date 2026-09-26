@@ -101,9 +101,12 @@ class ValidationResult:
         self.errors = []
         self.warnings = []
         self.passed = []
+        self.fix_suggestions = []  # 自动修复建议
 
-    def error(self, msg):
+    def error(self, msg, fix=None):
         self.errors.append(msg)
+        if fix:
+            self.fix_suggestions.append((msg, fix))
 
     def warn(self, msg):
         self.warnings.append(msg)
@@ -135,6 +138,13 @@ class ValidationResult:
             lines.append(f"\n❌ 错误 ({len(self.errors)} 项):")
             for e in self.errors:
                 lines.append(f"   - {e}")
+
+        # 自动修复建议
+        if self.fix_suggestions:
+            lines.append(f"\n🔧 自动修复建议 ({len(self.fix_suggestions)} 项):")
+            for i, (msg, fix) in enumerate(self.fix_suggestions, 1):
+                lines.append(f"   {i}. {msg}")
+                lines.append(f"      修复: {fix}")
 
         lines.append("\n" + "=" * 60)
         if self.success:
@@ -199,7 +209,8 @@ def validate_skill_frontmatter(skill_dir: Path, result: ValidationResult):
     """验证单个 skill 的 frontmatter（agentskills.io 官方规范）"""
     skill_md = skill_dir / "SKILL.md"
     if not skill_md.exists():
-        result.error(f"skills/{skill_dir.name}/ 缺少 SKILL.md")
+        result.error(f"skills/{skill_dir.name}/ 缺少 SKILL.md",
+                     fix=f"创建 skills/{skill_dir.name}/SKILL.md，包含 name 和 description frontmatter")
         return
 
     try:
@@ -315,7 +326,8 @@ def validate_plugin(plugin_path: str) -> ValidationResult:
 
     # 检查必需字段
     if "$schema" not in manifest:
-        result.error("plugin.json 缺少必需字段: $schema")
+        result.error("plugin.json 缺少必需字段: $schema",
+                     fix='添加 "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json"')
     else:
         schema_val = manifest["$schema"]
         if not isinstance(schema_val, str):
@@ -329,7 +341,8 @@ def validate_plugin(plugin_path: str) -> ValidationResult:
             result.ok(f"$schema 值正确（规范版本 {ver}）")
 
     if "name" not in manifest:
-        result.error("plugin.json 缺少必需字段: name")
+        result.error("plugin.json 缺少必需字段: name",
+                     fix='添加 "name": "插件名称"（小写字母+数字+连字符）')
     else:
         name_val = manifest["name"]
         if not isinstance(name_val, str) or not name_val:
@@ -343,7 +356,10 @@ def validate_plugin(plugin_path: str) -> ValidationResult:
                     f"   规则: 1-64字符，小写字母/数字/连字符/点，以字母数字开头结尾，禁止连续 -- 或 .."
                 )
             if name_val != root.name:
-                result.error(f"name 与目录名不一致\n   name: {name_val}\n   目录名: {root.name}")
+                result.error(
+                    f"name 与目录名不一致\n   name: {name_val}\n   目录名: {root.name}",
+                    fix=f'修改 plugin.json 的 name 为 "{root.name}"'
+                )
             else:
                 result.ok(f"name 符合规则且与目录名一致: {name_val}")
 
@@ -479,7 +495,8 @@ def validate_plugin(plugin_path: str) -> ValidationResult:
                     elif plugin_ver and mcp_ver:
                         result.error(
                             f"plugin.json 与 mcp.json 的规范版本不一致\n"
-                            f"   plugin.json: {plugin_ver}\n   mcp.json:     {mcp_ver}"
+                            f"   plugin.json: {plugin_ver}\n   mcp.json:     {mcp_ver}",
+                            fix=f"将两个文件的 $schema 都改为同一版本（推荐 1.0.0）"
                         )
     else:
         result.ok("无 mcp.json（纯 Skills 插件）")
