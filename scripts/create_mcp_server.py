@@ -245,12 +245,16 @@ def generate_python_server(name: str, definition: dict, transport: str) -> str:
         lines += ['# ============================================================', '# 工具注册 (Tools)',
                   '# ============================================================', '']
         for tool in tools:
-            tname, tdesc = tool["name"], tool["description"]
+            raw_name = tool["name"]
+            tname = safe_py_name(raw_name)
+            tdesc = tool["description"]
             params = normalize_params(tool)
             sig = ", ".join([f"{safe_py_name(p)}: {py_type(d)}" for p, d in params.items()])
-            lines += [f'@mcp.tool()', f'def {tname}({sig}) -> str:', f'    """{tdesc}"""',
-                      f'    # TODO: 实现工具 "{tname}" 的业务逻辑',
-                      f'    return "Tool {tname} executed"', '']
+            # 如果安全函数名与原始名不同，显式指定工具名
+            tool_decorator = f'@mcp.tool(name="{raw_name}")' if tname != raw_name else '@mcp.tool()'
+            lines += [tool_decorator, f'def {tname}({sig}) -> str:', f'    """{tdesc}"""',
+                      f'    # TODO: 实现工具 "{raw_name}" 的业务逻辑',
+                      f'    return "Tool {raw_name} executed"', '']
 
     if resources:
         lines += ['# ============================================================', '# 资源注册 (Resources)',
@@ -430,13 +434,15 @@ def cmd_add(args):
     else:
         new_code = ""
         for tool in definition["tools"]:
-            tname = tool["name"]
+            raw_name = tool["name"]
+            tname = safe_py_name(raw_name)
             if f"def {tname}(" in content:
-                print(f"⚠️  工具已存在，跳过: {tname}")
+                print(f"⚠️  工具已存在，跳过: {raw_name}")
                 continue
             params = normalize_params(tool)
             sig = ", ".join([f"{safe_py_name(p)}: {py_type(d)}" for p, d in params.items()])
-            new_code += f'\n@mcp.tool()\ndef {tname}({sig}) -> str:\n    """{tool["description"]}"""\n    # TODO: 实现工具 "{tname}"\n    return "Tool {tname} added"\n'
+            tool_decorator = f'@mcp.tool(name="{raw_name}")' if tname != raw_name else '@mcp.tool()'
+            new_code += f'\n{tool_decorator}\ndef {tname}({sig}) -> str:\n    """{tool["description"]}"""\n    # TODO: 实现工具 "{raw_name}"\n    return "Tool {raw_name} added"\n'
             added += 1
         marker = "# ============================================================\n# 启动服务器"
         content = content.replace(marker, new_code + "\n" + marker) if marker in content else content + new_code
