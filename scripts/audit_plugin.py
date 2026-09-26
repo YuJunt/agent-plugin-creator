@@ -187,7 +187,7 @@ DOCUMENT_PROMPT_INJECTION_PATTERNS = [
     # === 数据泄露（中英文）===
     (r"exfiltrat|steal|leak|send\s+(?:data|info|content|secrets|keys|credentials)\s+to",
      "文档包含数据泄露/窃取模式", "critical"),
-    (r"泄露|窃取|外传|发送(?:数据|信息|密钥|密码|凭证)到",
+    (r"泄露(?:给|到|.*?外部|.*?第三方)|窃取(?:数据|信息|密钥|密码|凭证|文件)|外传(?:给|到|.*?外部|.*?第三方)|发送(?:数据|信息|密钥|密码|凭证)到",
      "文档包含中文数据泄露模式", "critical"),
     (r"send\s+(?:the\s+)?(?:conversation|chat|messages?|history|context)\s+(?:to|via)\s+",
      "文档试图发送对话内容到外部（数据泄露）", "critical"),
