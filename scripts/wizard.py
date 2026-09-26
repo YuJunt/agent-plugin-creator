@@ -45,6 +45,7 @@ import json
 import subprocess
 import sys
 from pathlib import Path
+from skill_template import generate_skill_md_template
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPT_DIR.parent
@@ -649,7 +650,37 @@ def main():
         print("   模式: 预览（不实际写入）")
     print()
 
-    generated = generate_plugin(config, output_dir, dry_run=args.dry_run)
+    # P1 优化：如果使用了 --template，优先从 examples/ 复制高质量示例（0 TODO）
+    TEMPLATE_TO_EXAMPLE = {
+        "minimal": "minimal-skill-only",
+        "code-review": "minimal-skill-only",
+        "customer-support": "customer-support.triage",
+        "full-stack": "multi-skill-ts-mcp",
+    }
+
+    use_example = args.template and args.template in TEMPLATE_TO_EXAMPLE and not args.dry_run
+    if use_example:
+        example_name = TEMPLATE_TO_EXAMPLE[args.template]
+        example_dir = SKILL_DIR / "examples" / example_name
+        if example_dir.exists():
+            print(f"📦 从高质量示例复制: examples/{example_name}（0 TODO，可直接使用）")
+            import shutil
+            shutil.copytree(example_dir, output_dir)
+            plugin_json_path = output_dir / "plugin.json"
+            if plugin_json_path.exists():
+                plugin_data = json.loads(plugin_json_path.read_text(encoding="utf-8"))
+                plugin_data["name"] = config["name"]
+                plugin_data["version"] = config["version"]
+                plugin_data["description"] = config.get("description", plugin_data.get("description", ""))
+                plugin_json_path.write_text(json.dumps(plugin_data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+            generated = [str(f.relative_to(output_dir)) for f in output_dir.rglob("*") if f.is_file()]
+            print(f"✅ 已从示例复制 {len(generated)} 个文件")
+        else:
+            print(f"⚠️  示例目录不存在: {example_dir}，回退到动态生成")
+            use_example = False
+
+    if not use_example:
+        generated = generate_plugin(config, output_dir, dry_run=args.dry_run)
 
     print()
     print("=" * 60)

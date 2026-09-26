@@ -440,40 +440,69 @@ class TestWizard:
         """测试列出可用模板"""
         result = run_script("wizard.py", ["--list-templates"])
         assert result.returncode == 0
-        # 应该列出至少一个模板
         assert len(result.stdout) > 0
 
-    def test_dry_run_minimal_template(self, temp_dir):
-        """测试 minimal 模板的预览模式（--dry-run）"""
+    def test_create_minimal_template(self, temp_dir):
+        """测试实际创建 minimal 模板插件（关键：验证不崩溃）"""
+        output_dir = temp_dir / "minimal-plugin"
         result = run_script("wizard.py", [
             "--template", "minimal",
-            "--name", "test-wizard-plugin",
-            "--output", str(temp_dir / "test-plugin"),
-            "--dry-run"
-        ])
-        # dry-run 可能返回 0 或非 0（取决于实现），但不应该崩溃
-        assert result.returncode in [0, 1]
-
-    def test_create_with_config_file(self, temp_dir):
-        """测试从配置文件创建（非交互式）"""
-        config_file = temp_dir / "config.json"
-        config_file.write_text(json.dumps({
-            "name": "config-plugin",
-            "version": "1.0.0",
-            "description": "从配置文件创建的测试插件",
-            "skills": [
-                {"name": "main-skill", "description": "主技能"}
-            ]
-        }), encoding="utf-8")
-
-        result = run_script("wizard.py", [
-            "--config", str(config_file),
-            "--output", str(temp_dir / "config-plugin"),
+            "--name", "minimal-plugin",
+            "--output", str(output_dir),
             "--force"
         ])
-        # 配置文件创建可能成功或需要特定格式
-        # 只要不崩溃就可以
-        assert result.returncode in [0, 1, 2]
+        assert result.returncode == 0
+        assert output_dir.exists()
+        assert (output_dir / "plugin.json").exists()
+        assert (output_dir / "skills").is_dir()
+
+    def test_create_full_stack_template(self, temp_dir):
+        """测试实际创建 full-stack 模板插件（含 MCP）"""
+        output_dir = temp_dir / "fullstack-plugin"
+        result = run_script("wizard.py", [
+            "--template", "full-stack",
+            "--name", "fullstack-plugin",
+            "--output", str(output_dir),
+            "--force"
+        ])
+        assert result.returncode == 0
+        assert output_dir.exists()
+        assert (output_dir / "plugin.json").exists()
+
+    def test_created_plugin_has_skill_md(self, temp_dir):
+        """测试创建的插件包含 SKILL.md"""
+        output_dir = temp_dir / "test-plugin"
+        run_script("wizard.py", [
+            "--template", "minimal",
+            "--name", "test-plugin",
+            "--output", str(output_dir),
+            "--force"
+        ])
+        skill_files = list(output_dir.rglob("SKILL.md"))
+        assert len(skill_files) > 0
+
+    def test_created_plugin_passes_validation(self, temp_dir):
+        """测试创建的插件通过结构验证（关键：验证生成质量）"""
+        output_dir = temp_dir / "valid-plugin"
+        run_script("wizard.py", [
+            "--template", "minimal",
+            "--name", "valid-plugin",
+            "--output", str(output_dir),
+            "--force"
+        ])
+        result = run_script("validate_plugin.py", [str(output_dir)])
+        assert result.returncode == 0
+
+    def test_dry_run_does_not_create_files(self, temp_dir):
+        """测试 --dry-run 不实际创建文件"""
+        output_dir = temp_dir / "dryrun-plugin"
+        run_script("wizard.py", [
+            "--template", "minimal",
+            "--name", "dryrun-plugin",
+            "--output", str(output_dir),
+            "--dry-run"
+        ])
+        assert not output_dir.exists()
 
     def test_help(self):
         """测试帮助信息"""
@@ -488,5 +517,4 @@ class TestWizard:
             "--name", "test-plugin",
             "--output", str(temp_dir / "test-plugin")
         ])
-        # 无效模板应该失败或回退到默认
         assert result.returncode in [0, 1]

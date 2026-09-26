@@ -67,10 +67,10 @@ description: 创建符合 Agent Plugins 1.0.0 开放规范的可移植插件包�
 ## 工作流程（3 阶段）
 
 > **详细步骤见 `references/workflows.md`**，包含三条路径（纯 Skill / Skill+本地 MCP / Skill+远程 MCP）。
-
 ### 阶段 1：创建
+> **🔴 强制：创建前必须先读 `official/skill-creator/SKILL.md` 和 `official/mcp-builder/SKILL.md`，不可跳过！**
 ```bash
-plugin.py new          # 交互式创建插件骨架（推荐）
+plugin.py new          # 交互式创建（优先从 examples/ 高质量示例复制，0 TODO）
 plugin.py skill        # 单独初始化 skill 骨架
 plugin.py mcp          # 单独生成 MCP 服务器
 ```
@@ -93,7 +93,7 @@ plugin.py package      # 打包发布
 plugin.py release-audit # 发布前审计
 ```
 
-> 本流程对齐 `official/skill-creator` 和 `official/mcp-builder`，创建前应先读对应官方资源。高级功能见 `references/advanced.md`。
+> 本流程对齐 `official/skill-creator` 和 `official/mcp-builder`，**创建前必须读对应官方资源（不可跳过）**。高级功能见 `references/advanced.md`。
 
 ## 触发路由（编排器大脑）
 
