@@ -216,32 +216,23 @@ python3 <skill_dir>/scripts/wizard.py --config config.json --dry-run
 | `score_plugin.py` | 插件质量评分 | `plugin.py score` |
 | `release_audit.py` | 发布前审计 | `plugin.py release-audit` |
 
-### 评估类
-
-> **统一入口**：用 `run_evals.py`，内部调用 trigger/selection/edge 三种评估。
-
-| 脚本 | 功能 |
-|---|---|
-| `run_evals.py` | 统一评估入口（`--type trigger/selection/edge/all`） |
-
-### 打包与发布类
+### 打包与发布
 
 | 脚本 | 功能 | 命令 |
 |---|---|---|
-| `package_plugin.py` | 打包插件 | `plugin.py package` |
-| `generate_docs.py` | 生成文档 | `plugin.py docs` |
-| `client_adapter.py` | 多客户端适配 | 高级 |
+| `package_plugin.py` | 打包插件（自动级联验证） | `plugin.py package` |
+| `generate_docs.py` | 生成 README 文档 | `plugin.py docs` |
 
-### 其他工具
+### 评估与其他
+
+> **评估统一入口**：`run_evals.py --type trigger/selection/edge/all`；内部脚本（`skill_template.py`/`errors.py`/`_common.py`）无需直接调用。
 
 | 脚本 | 功能 |
 |---|---|
-| `skill_template.py` | 共享模板生成器（内部用） |
-| `errors.py` | 统一错误码（内部用） |
+| `run_evals.py` | 统一评估入口 |
+| `client_adapter.py` | 多客户端适配（高级） |
 
 > **详细的脚本→参考文档→模板对照表、关键规则速查、常见错误和故障排除见 `references/cheatsheet.md`。**
->
-> 多平台安装步骤见 `INSTALL.md`，贡献指南见 `CONTRIBUTING.md`。
 
 ## 质量门禁与评估
 
