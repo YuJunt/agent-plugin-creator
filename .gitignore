@@ -53,3 +53,10 @@ quality.json
 __pycache__/
 .pytest_cache/
 *.pyc
+
+# 测试和覆盖率（开发时文件，不提交到仓库）
+htmlcov/
+.pytest_cache/
+.coverage
+coverage.xml
+.pytest_cache/
