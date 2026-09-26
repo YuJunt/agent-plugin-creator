@@ -21,6 +21,7 @@ description: 创建符合 Agent Plugins 1.0.0 开放规范的可移植插件包�
 > |---|---|
 > | 从零创建一个插件 | `plugin.py new` |
 > | 创建一个带 skill 的插件 | `plugin.py skill my-skill --lang zh` |
+> | 将现有技能转化成插件 | `plugin.py wrap ./my-skill` |
 > | 创建一个带 MCP 服务器的插件 | `plugin.py mcp` |
 > | 验证我写的插件对不对 | `plugin.py validate ./my-plugin` |
 > | 检查我的插件安全吗 | `plugin.py audit ./my-plugin` |
@@ -197,6 +198,7 @@ python3 <skill_dir>/scripts/wizard.py --config config.json --dry-run
 | `wizard.py` | 交互式创建插件（推荐） | `plugin.py new` |
 | `init_skill.py` | 初始化 Skill 脚手架 | `plugin.py skill` |
 | `create_mcp_server.py` | 生成 MCP 服务器代码 | `plugin.py mcp` |
+| `skill_to_plugin.py` | 正向封装：现有 Skill→插件 | `plugin.py wrap` |
 | `plugin_to_skill.py` | 反向封装：插件→普通 Skill | 高级 |
 
 ### 验证与质量类

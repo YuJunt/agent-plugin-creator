@@ -308,6 +308,35 @@ def cmd_skill(args):
     return subprocess.call(cmd)
 
 
+def cmd_wrap(args):
+    """将现有 Skill 转化为完整专业的插件（正向封装，与 plugin_to_skill 对称）"""
+    from skill_to_plugin import skill_to_plugin, print_result
+
+    skill_dir = Path(args.skill_dir).resolve()
+    if args.output:
+        output_dir = Path(args.output).resolve()
+    else:
+        output_dir = Path.cwd() / skill_dir.name
+
+    result = skill_to_plugin(
+        skill_dir=skill_dir,
+        output_dir=output_dir,
+        name=args.name,
+        version=args.version,
+        description=args.description,
+        force=args.force,
+        run_validate=not args.no_validate
+    )
+
+    if args.json:
+        import json
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+    else:
+        print_result(result)
+
+    return 0 if result["success"] else 1
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Agent Plugin Creator - 统一入口",
@@ -335,6 +364,17 @@ def main():
     p_skill.add_argument("name", help="插件/skill 名称")
     p_skill.add_argument("--path", default=".", help="输出目录")
     p_skill.add_argument("--lang", choices=["en", "zh"], help="SKILL.md 模板语言")
+
+    # wrap - 将现有 Skill 转化为插件（正向封装）
+    p_wrap = subparsers.add_parser("wrap", help="将现有 Skill 转化为完整专业的插件（正向封装）")
+    p_wrap.add_argument("skill_dir", help="现有 Skill 目录路径（必须包含 SKILL.md）")
+    p_wrap.add_argument("--output", "-o", help="输出插件目录路径")
+    p_wrap.add_argument("--name", help="插件名称（默认从技能 name 推断）")
+    p_wrap.add_argument("--version", default="0.1.0", help="版本号（默认 0.1.0）")
+    p_wrap.add_argument("--description", help="插件描述（默认从技能 description 推断）")
+    p_wrap.add_argument("--force", "-f", action="store_true", help="覆盖已有输出目录")
+    p_wrap.add_argument("--no-validate", action="store_true", help="跳过自动验证")
+    p_wrap.add_argument("--json", action="store_true", help="JSON 格式输出")
 
     # mcp - 生成 MCP 服务器
     p_mcp = subparsers.add_parser("mcp", help="生成 MCP 服务器")
@@ -413,6 +453,8 @@ def main():
     # 路由到对应脚本（运行时动态构建参数）
     if args.command == "skill":
         sys.exit(cmd_skill(args))
+    elif args.command == "wrap":
+        sys.exit(cmd_wrap(args))
     elif args.command == "new":
         script, script_args = "wizard.py", ["--output", args.output]
     elif args.command == "mcp":
