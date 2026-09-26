@@ -6,12 +6,13 @@ MCP 服务器握手测试工具
   1. initialize 请求 → 验证 serverInfo 和 capabilities
   2. notifications/initialized 通知
   3. tools/list 请求 → 验证工具列表
-  4. （可选）resources/list 和 prompts/list
+  4. resources/list 请求 → 验证资源列表（服务器不支持则标记为不支持）
+  5. prompts/list 请求 → 验证提示列表（服务器不支持则标记为不支持）
 
 用法:
     python3 test_mcp_handshake.py --command "npx tsx src/server.ts"
     python3 test_mcp_handshake.py --command "python server.py" --timeout 15
-    python3 test_mcp_handshake.py --command "..." --check-resources --check-prompts
+    python3 test_mcp_handshake.py --command "..." --no-check-resources --no-check-prompts
 """
 import argparse
 import json
@@ -52,9 +53,9 @@ def read_response(proc, timeout: float = 10.0) -> dict:
     return {"_error": f"等待响应超时（{timeout}秒）"}
 
 
-def test_handshake(command: str, timeout: int = 10, check_resources: bool = False,
-                   check_prompts: bool = False, cwd: str = None) -> dict:
-    """执行完整的 MCP 握手测试"""
+def test_handshake(command: str, timeout: int = 10, check_resources: bool = True,
+                   check_prompts: bool = True, cwd: str = None) -> dict:
+    """执行完整的 MCP 握手测试（默认检查 tools/resources/prompts 全部）"""
     results = {
         "initialize": {"passed": False, "details": ""},
         "tools_list": {"passed": False, "details": ""},
@@ -135,7 +136,7 @@ def test_handshake(command: str, timeout: int = 10, check_resources: bool = Fals
         else:
             results["tools_list"]["details"] = f"未知响应格式: {resp}"
 
-        # 4. resources/list（可选）
+        # 4. resources/list（默认检查，服务器不支持则标记为不支持）
         if check_resources:
             send_message(proc, {"jsonrpc": "2.0", "id": 3, "method": "resources/list"})
             resp = read_response(proc, timeout)
@@ -145,13 +146,18 @@ def test_handshake(command: str, timeout: int = 10, check_resources: bool = Fals
                 results["resources_list"]["passed"] = True
                 results["resources_list"]["details"] = f"发现 {len(resources)} 个资源"
             elif "error" in resp:
-                results["resources_list"]["passed"] = False
-                results["resources_list"]["details"] = f"错误: {resp['error']}"
+                err_msg = str(resp.get("error", ""))
+                if "MethodNotFound" in err_msg or "method not found" in err_msg.lower() or "-32601" in err_msg:
+                    results["resources_list"]["passed"] = None
+                    results["resources_list"]["details"] = "服务器不支持 resources 能力"
+                else:
+                    results["resources_list"]["passed"] = False
+                    results["resources_list"]["details"] = f"错误: {resp['error']}"
             else:
                 results["resources_list"]["passed"] = False
                 results["resources_list"]["details"] = str(resp.get("_error", resp))
 
-        # 5. prompts/list（可选）
+        # 5. prompts/list（默认检查，服务器不支持则标记为不支持）
         if check_prompts:
             send_message(proc, {"jsonrpc": "2.0", "id": 4, "method": "prompts/list"})
             resp = read_response(proc, timeout)
@@ -161,8 +167,13 @@ def test_handshake(command: str, timeout: int = 10, check_resources: bool = Fals
                 results["prompts_list"]["passed"] = True
                 results["prompts_list"]["details"] = f"发现 {len(prompts)} 个提示"
             elif "error" in resp:
-                results["prompts_list"]["passed"] = False
-                results["prompts_list"]["details"] = f"错误: {resp['error']}"
+                err_msg = str(resp.get("error", ""))
+                if "MethodNotFound" in err_msg or "method not found" in err_msg.lower() or "-32601" in err_msg:
+                    results["prompts_list"]["passed"] = None
+                    results["prompts_list"]["details"] = "服务器不支持 prompts 能力"
+                else:
+                    results["prompts_list"]["passed"] = False
+                    results["prompts_list"]["details"] = f"错误: {resp['error']}"
             else:
                 results["prompts_list"]["passed"] = False
                 results["prompts_list"]["details"] = str(resp.get("_error", resp))
@@ -195,7 +206,10 @@ def print_results(results: dict):
     all_passed = True
     for name, check in checks:
         if check["passed"] is None:
-            status = "⚪ 跳过"
+            if "不支持" in check["details"]:
+                status = "⚪ 不支持"
+            else:
+                status = "⚪ 跳过"
         elif check["passed"]:
             status = "✅ 通过"
         else:
@@ -238,20 +252,22 @@ def print_results(results: dict):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="MCP 服务器握手测试工具")
+    parser = argparse.ArgumentParser(description="MCP 服务器握手测试工具（默认检查 tools/resources/prompts 全部）")
     parser.add_argument("--command", required=True, help="启动 MCP 服务器的命令（如 'npx tsx src/server.ts'）")
     parser.add_argument("--timeout", type=int, default=10, help="响应超时秒数（默认 10）")
     parser.add_argument("--cwd", help="服务器工作目录（默认当前目录）")
-    parser.add_argument("--check-resources", action="store_true", help="同时检查 resources/list")
-    parser.add_argument("--check-prompts", action="store_true", help="同时检查 prompts/list")
+    parser.add_argument("--no-check-resources", action="store_true", help="跳过 resources/list 检查")
+    parser.add_argument("--no-check-prompts", action="store_true", help="跳过 prompts/list 检查")
+    parser.add_argument("--check-resources", action="store_true", help="（已默认启用，保留用于向后兼容）")
+    parser.add_argument("--check-prompts", action="store_true", help="（已默认启用，保留用于向后兼容）")
     parser.add_argument("--json", action="store_true", help="以 JSON 格式输出结果")
     args = parser.parse_args()
 
     results = test_handshake(
         command=args.command,
         timeout=args.timeout,
-        check_resources=args.check_resources,
-        check_prompts=args.check_prompts,
+        check_resources=not args.no_check_resources,
+        check_prompts=not args.no_check_prompts,
         cwd=args.cwd,
     )
 

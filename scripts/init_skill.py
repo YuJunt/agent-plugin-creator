@@ -78,10 +78,11 @@ def validate_name(name: str) -> list:
     return errors
 
 
-def create_skill(name: str, output_path: str, force: bool = False) -> Path:
+def create_skill(name: str, output_path: str, force: bool = False, lang: str = "en") -> Path:
     """创建 skill 目录结构
 
     幂等设计：默认不覆盖已有目录。如需覆盖，使用 force=True。
+    lang: 模板语言，"en"（默认）或 "zh"
     """
     skill_dir = Path(output_path) / name
 
@@ -101,8 +102,9 @@ def create_skill(name: str, output_path: str, force: bool = False) -> Path:
     # 生成 title（首字母大写，连字符转空格）
     title = name.replace("-", " ").title()
 
-    # 创建 SKILL.md
-    skill_md_content = f"""---
+    # 创建 SKILL.md（默认英文模板，--lang zh 使用中文模板）
+    if lang == "zh":
+        skill_md_content = f"""---
 name: {name}
 description: 描述这个 skill 做什么，以及什么时候应该使用它。包含具体的触发场景和关键词。（1-1024字符）
 ---
@@ -130,6 +132,36 @@ description: 描述这个 skill 做什么，以及什么时候应该使用它。
 ## 参考资源
 - 详细文档参见 references/ 目录
 - 可执行脚本参见 scripts/ 目录
+"""
+    else:
+        skill_md_content = f"""---
+name: {name}
+description: Replace with a clear description of what this skill does AND when it should be triggered. Include specific use cases and trigger keywords. (1-1024 chars)
+---
+
+# {title}
+
+## Overview
+Briefly describe what this skill does and what problem it solves.
+
+## Workflow
+Describe the execution flow step by step:
+
+1. First step
+2. Second step
+3. Third step
+
+## Key Rules
+- Rule one
+- Rule two
+
+## Gotchas
+- List environment-specific facts that violate reasonable assumptions
+- These are often the most valuable content in a skill
+
+## Bundled Resources
+- Detailed documentation: see `references/` directory
+- Executable scripts: see `scripts/` directory
 """
     (skill_dir / "SKILL.md").write_text(skill_md_content, encoding="utf-8")
 
@@ -160,6 +192,7 @@ def main():
         help="覆盖已有目录（默认不覆盖，幂等设计）",
     )
     parser.add_argument("--json", action="store_true", help="以 JSON 格式输出结果")
+    parser.add_argument("--lang", choices=["en", "zh"], default="en", help="SKILL.md 模板语言（默认 en 英文，zh 中文）")
     args = parser.parse_args()
 
     # 验证 name
@@ -174,7 +207,7 @@ def main():
         sys.exit(1)
 
     # 创建 skill
-    skill_dir = create_skill(args.name, args.path, force=args.force)
+    skill_dir = create_skill(args.name, args.path, force=args.force, lang=args.lang)
 
     if args.json:
         result = {
