@@ -201,6 +201,8 @@ python3 <skill_dir>/scripts/wizard.py --config config.json --dry-run
 
 ### 验证与质量类
 
+> **使用顺序**：`plugin.py test`（一键全测）→ `validate`（结构）→ `audit`（安全）→ `check_completion`（完成度）→ `score`（质量评分）
+
 | 脚本 | 功能 | 命令 |
 |---|---|---|
 | `validate_plugin.py` | 验证插件结构 | `plugin.py validate` |
@@ -210,10 +212,13 @@ python3 <skill_dir>/scripts/wizard.py --config config.json --dry-run
 | `test_mcp_handshake.py` | MCP 握手测试 | `plugin.py mcp-test` |
 | （验证链组合） | 完整插件测试（三级门禁） | `plugin.py test` |
 | `check_skill_quality.py` | Skill 质量自动检查 | `python3 scripts/check_skill_quality.py .` |
+| `check_completion.py` | 插件完成度检查（TODO数量警告） | `python3 scripts/check_completion.py <plugin_dir>` |
 | `score_plugin.py` | 插件质量评分 | `plugin.py score` |
 | `release_audit.py` | 发布前审计 | `plugin.py release-audit` |
 
 ### 评估类
+
+> **统一入口**：用 `run_evals.py`，内部调用 trigger/selection/edge 三种评估。
 
 | 脚本 | 功能 |
 |---|---|

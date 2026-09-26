@@ -18,7 +18,6 @@
 | MCP 服务器生成（tools/resources/prompts + add/list） | `scripts/create_mcp_server.py` | `references/mcp-server-guide.md` | `assets/templates/mcp-server/{typescript,python}/` |
 | MCP 握手测试 | `scripts/test_mcp_handshake.py` | — | — |
 | 插件组装验证 | `scripts/validate_plugin.py` | `references/plugin-specification.md` | `assets/templates/{plugin.json,mcp.json}` |
-| Skill 质量评估 | `scripts/eval_skill.py` | `official/skill-creator/references/schemas.md` | — |
 | 安全审计 | `scripts/audit_plugin.py` | — | — |
 | 多客户端适配（检查/生成/编译） | `scripts/client_adapter.py` | — | — |
 | 文档自动生成 | `scripts/generate_docs.py` | — | — |
@@ -27,22 +26,10 @@
 | 反向封装为 Skill | `scripts/plugin_to_skill.py` | — | — |
 | 官方 skill-creator 工作流 | — | `official/skill-creator/SKILL.md` | — |
 | 官方 mcp-builder 工作流 | — | `official/mcp-builder/SKILL.md` | — |
-| 工具契约验证 | `scripts/validate_tool_contract.py` | `references/mcp-tool-contract.json` | — |
 | 触发评估 | `scripts/run_trigger_eval.py` | `evals/evals.json` | — |
 | 选择评估 | `scripts/run_selection_eval.py` | `references/evaluation-protocol.md` | — |
 | 边界评估 | `scripts/run_edge_eval.py` | `references/evaluation-protocol.md` | — |
-| 产物评估 | `scripts/evaluate_plugin_artifact.py` | `references/quality-gates.md` | — |
-| 客户端一致性测试 | `scripts/run_client_conformance.py` | `references/client-conformance.md` | — |
-| 失败边界测试 | `scripts/test_failure_boundaries.py` | `references/regression-matrix.md` | — |
-| 官方语义测试 | `scripts/test_official_semantics.py` | `references/official-conformance-matrix.md` | — |
-| 发现模拟 | `scripts/simulate_discovery.py` | — | — |
 | 发布审计 | `scripts/release_audit.py` | `references/quality-gates.md` | — |
-| 发布决策 | `scripts/release_decision.py` | `references/quality-gates.md` | — |
-| 发布构建 | `scripts/build_release.py` | — | — |
-| 修复计划生成 | `scripts/generate_repair_plan.py` | — | — |
-| 质量报告 | `scripts/quality_report.py` | `references/quality-gates.md` | — |
-| 远程 MCP 探测 | `scripts/probe_remote_mcp.py` | — | — |
-| MCP 基准测试 | `scripts/benchmark_mcp.py` | — | — |
 | 端到端示例 | — | `references/examples.md` | `examples/` |
 | 官方 JSON Schema | — | `assets/schemas/1.0.0/` | — |
 
@@ -50,44 +37,19 @@
 
 | 能力 | 脚本 | 说明 |
 |------|------|------|
-| MCP 工具真实调用测试 | `scripts/test_mcp_tools.py` | 参数验证+返回结构+错误处理 |
-| 插件增量更新 | `scripts/update_plugin.py` | 版本号+依赖+配置自动更新 |
-| 从 MCP 代码反推插件 | `scripts/reverse_engineer.py` | 已有服务器代码→插件结构 |
 | 插件质量评分器 | `scripts/score_plugin.py` | 6维度加权评分 |
-| MCP 依赖管理 | `scripts/manage_deps.py` | 安装/更新/审计/锁定 |
-| 验证失败自动修复 | `scripts/auto_fix.py` | 6类常见错误自动修复 |
-| 一键全流程构建 | `scripts/build_all.py` | 验证→审计→打包→签名→发布 |
-| 进度可视化模块 | `scripts/progress.py` | 可复用进度条 |
-| 配置热加载 | `scripts/export_config.py` | 配置文件导出/导入 |
 
 ### P1 新增（质量与生态）
 
 | 能力 | 脚本 | 说明 |
 |------|------|------|
-| 代码覆盖率报告 | `scripts/check_coverage.py` | pytest-cov+60%门禁 |
-| 模糊测试 | `scripts/fuzz_test.py` | 12种畸形输入 |
-| 性能基准监控 | `scripts/benchmark_monitor.py` | 历史对比+退化检测 |
 | 统一错误码系统 | `scripts/errors.py` | 31个标准化错误码 |
-| Docker 镜像生成 | `scripts/dockerize.py` | Dockerfile+compose |
-| npm/pypi 发布配置 | `scripts/publish_config.py` | 包管理配置 |
-| VS Code 扩展生成 | `scripts/vscode_extension.py` | 完整扩展骨架 |
-| MCP 市场元数据 | `scripts/mcp_marketplace.py` | 自动分类+标签 |
-| 类型注解检查 | `scripts/type_check.py` | mypy配置+覆盖率 |
 
 ### P2 新增（安全与高级）
 
 | 能力 | 脚本 | 说明 |
 |------|------|------|
-| 供应链安全扫描 | `scripts/supply_chain_scan.py` | 25个已知漏洞包检测 |
-| SBOM 生成 | `scripts/generate_sbom.py` | CycloneDX+SPDX双格式 |
-| 插件数字签名 | `scripts/sign_plugin.py` | HMAC-SHA256签名+验证 |
-| 插件深度分析器 | `scripts/analyze_plugin.py` | 4维度分析+改进建议 |
-| 插件组合器 | `scripts/combine_plugins.py` | 多插件合并+冲突处理 |
-| 版本迁移工具 | `scripts/migrate_version.py` | 1.0.0→1.1.0自动迁移 |
-| 评估驱动开发 | `scripts/eval_driven_dev.py` | 先写评估再开发 |
-| 最佳实践库 | `scripts/best_practices.py` | 6大类21条最佳实践 |
 | 国际化框架 | `scripts/i18n_helper.py` | 多语言支持+翻译提取 |
-| 插件健康诊断 | `scripts/health_check.py` | 4维度加权评分+体检 |
 
 ### P0/P1/P2 脚本常用参数速查
 
@@ -254,14 +216,12 @@ audit_plugin.py 基于正则匹配，能检出常见漏洞模式，但**不能�
    - BrokenPipeError → 服务器启动后立即退出，检查依赖
 
 3. **工具能不能调用？**
-   ```bash
-   python3 scripts/benchmark_mcp.py --server servers/<name>/server.py --tool <工具名> --arguments '{}' --requests 1
-   ```
+   - 使用 `test_mcp_handshake.py` 验证握手后，检查 `tools/list` 返回的工具列表
+   - 工具调用失败 → 检查工具名称和参数是否匹配 inputSchema
 
 4. **远程服务器能不能访问？**
-   ```bash
-   python3 scripts/probe_remote_mcp.py --url "https://your-server/mcp" --output probe.json
-   ```
+   - stdio 模式：检查服务器启动命令和权限
+   - streamable-http 模式：检查 URL、TLS 证书、认证配置
 
 **建议**：安全审计是第一道防线，关键插件仍需人工审查代码，或使用专业 SAST 工具做深度分析。
 # Client Conformance Test Template
@@ -420,7 +380,6 @@ Agent Plugins v1 的客户端一致性不能由包结构验证器代替。为每
 |--------|------|---------|
 | E5001 | 构建失败 | 检查构建日志，修复编译/类型错误后重试 |
 | E5002 | 打包失败 | 检查插件结构，确保 plugin.json 等必需文件存在，用 `validate_plugin.py` 验证 |
-| E5003 | 缺少依赖 | 运行 `python3 scripts/manage_deps.py <server_dir> --check` 检查并安装缺失依赖 |
 | E5004 | 版本冲突 | 检查 plugin.json、CHANGELOG.md、provenance.json 的版本号是否一致 |
 
 ## 6xxx — 外部依赖/环境错误（4 个）

@@ -704,13 +704,11 @@ MCP 服务器握手测试报告
 
 ```bash
 # 方式 A：tsx 直接运行
-python3 scripts/test_mcp_tools.py \
   --command npx \
   --args tsx src/server.ts \
   --timeout 15
 
 # 方式 B：编译后运行
-python3 scripts/test_mcp_tools.py \
   --command node \
   --args dist/server.js \
   --timeout 10
@@ -734,7 +732,6 @@ python3 scripts/test_mcp_tools.py \
 ### 步骤 6：性能基准测试
 
 ```bash
-python3 scripts/benchmark_mcp.py \
   --server src/server.ts \
   --command "npx tsx" \
   --tool add \
@@ -815,7 +812,6 @@ npm install --save-dev @types/node
 npx tsx src/server.ts --port 3000 &
 
 # 2. 用 probe_remote_mcp.py 探测
-python3 scripts/probe_remote_mcp.py \
   --url "http://localhost:3000/mcp" \
   --output probe.json
 

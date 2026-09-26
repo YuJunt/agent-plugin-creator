@@ -261,7 +261,6 @@ python3 <skill_dir>/scripts/audit_plugin.py <插件目录>
 
 1. **用官方工具优化 description**：
    ```bash
-   python3 official/skill-creator/scripts/improve_description.py \
      --skill <插件目录>/skills/<skill-name>
    ```
 
@@ -272,7 +271,6 @@ python3 <skill_dir>/scripts/audit_plugin.py <插件目录>
 
 3. **测试触发率**（可选）：
    ```bash
-   python3 official/skill-creator/scripts/run_eval.py \
      --skill <插件目录>/skills/<skill-name>
    ```
 
@@ -368,7 +366,6 @@ description: 我的插件功能。当用户说"XXX"、"XXX"时使用。
 
 ## 步骤 3：编写实际脚本
 
-删除 `scripts/example.py`，写实际功能脚本：
 
 ```python
 #!/usr/bin/env python3
@@ -416,7 +413,6 @@ python3 scripts/plugin.py audit ./my-plugin
 python3 scripts/plugin.py smoke ./my-plugin
 
 # 4. 实际运行测试
-python3 my-plugin/skills/my-plugin/scripts/my_script.py --input "测试"
 ```
 
 **调试完成标准：**

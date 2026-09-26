@@ -177,7 +177,6 @@ frontmatter 之后的 Markdown body 包含 skill 指令。没有格式限制，�
 
 | 用例 | 命令 | 说明 |
 |------|------|------|
-| Python 内联依赖 | `uv run scripts/extract.py` | 需要 uv，使用 PEP 723 语法 |
 | Python pipx | `pipx run 'package==version'` | 需要 pipx |
 | Node.js 包 | `npx eslint@9 --fix .` | 随 Node.js 捆绑，固定版本 |
 | Deno 脚本 | `deno run scripts/extract.ts` | 自包含，用 `npm:` 引用 npm 包 |
@@ -214,7 +213,6 @@ Agent 渐进式加载 skills，仅在任务需要时引入更多细节：
 ```markdown
 See [the reference guide](references/REFERENCE.md) for details.
 Run the extraction script:
-scripts/extract.py
 ```
 
 保持文件引用距 `SKILL.md` 一层深。避免深度嵌套的引用链。
@@ -274,7 +272,6 @@ scripts/extract.py
 - **脚本有交互式提示** — agent 在非交互式 shell 中操作。阻塞在 TTY 提示、密码对话框或确认菜单上的脚本会无限期挂起。所有输入通过命令行标志、环境变量或 stdin 接受。
 - **脚本错误消息差** — 脚本失败时，错误消息直接塑造 agent 的下一次尝试。"Error: invalid input" 浪费一轮。改为："Error: --format must be one of: json, csv, table. Received: 'xml'."
 - **上下文压缩期间 skill 内容丢失** — 如果 agent 在上下文窗口填满时截断旧消息，skill 指令可能被修剪，静默降低性能。将 skill 内容标记为受保护不被修剪。
-- **脚本中的相对路径解析不正确** — 脚本应从 skill 目录根目录运行。用相对路径引用捆绑文件：`scripts/extract.py`、`references/api-errors.md`。agent 自动解析这些。
 - **skill 在不应处理的简单任务上触发** — agent 只在需要超出自身能力的专业知识时才咨询 skill。一个在 "read this PDF" 上触发的 skill（即使 agent 原生能做）是在浪费上下文。写强调什么时候需要专业知识的 description。
 - **name 字段与目录名不匹配** — `name` 字段必须与父目录名完全匹配。`name: pdf-processing` 要求目录是 `pdf-processing/`，不是 `PDF-Processing/` 或 `pdf_processing/`。
 - **name 中有连续连字符或开头/结尾连字符** — 无效：`pdf--processing`、`-pdf-processing`、`pdf-processing-`。有效：`pdf-processing`、`data-analysis`、`code-review`。

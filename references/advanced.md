@@ -11,23 +11,16 @@
 | `run_trigger_eval.py` | 触发评估（should-trigger / should-not-trigger） | `python3 scripts/run_trigger_eval.py --skill .` |
 | `run_selection_eval.py` | 选择评估（accuracy 指标） | `python3 scripts/run_selection_eval.py --skill .` |
 | `run_edge_eval.py` | 边界评估（边界用例） | `python3 scripts/run_edge_eval.py --skill .` |
-| `quality_report.py` | 质量报告（综合评分） | `python3 scripts/quality_report.py --skill .` |
-| `analyze_skill_quality.py` | 技能质量分析 | `python3 scripts/analyze_skill_quality.py --skill .` |
-| `compare_skill_versions.py` | 版本盲测对比 | `python3 scripts/compare_skill_versions.py --v1 v1.0 --v2 v1.1` |
 
 ## 安全审计
 
 | 脚本 | 功能 | 用法 |
 |---|---|---|
-| `mcp_security_check.py` | OWASP MCP 专项检查 | `python3 scripts/mcp_security_check.py ./my-plugin` |
-| `audit_progressive_disclosure.py` | 渐进式披露 Token 预算审计 | `python3 scripts/audit_progressive_disclosure.py --skill .` |
 
 ## 市场发布
 
 | 脚本 | 功能 | 用法 |
 |---|---|---|
-| `generate_marketplace_json.py` | GitHub 市场元数据 | `python3 scripts/generate_marketplace_json.py --plugin ./my-plugin` |
-| `generate_skillsh_metadata.py` | Vercel skills.sh 元数据 | `python3 scripts/generate_skillsh_metadata.py --plugin ./my-plugin` |
 | `client_adapter.py` | 多客户端适配（Claude/Copilot/Cursor） | `python3 scripts/client_adapter.py ./my-plugin --generate` |
 
 ## 开发工具
@@ -35,17 +28,12 @@
 | 脚本 | 功能 | 用法 |
 |---|---|---|
 | `migrate_mcp_v2.py` | MCP v1→v2 迁移检测 | `python3 scripts/migrate_mcp_v2.py --project ./my-mcp` |
-| `detect_client.py` | 客户端环境自动检测 | `python3 scripts/detect_client.py` |
-| `performance_baseline.py` | 性能基准监控 | `python3 scripts/performance_baseline.py --run` |
-| `mutation_test.py` | 变异测试 + 属性测试 | `python3 scripts/mutation_test.py` |
 | `plugin_to_skill.py` | 反向封装（插件→技能） | `python3 scripts/plugin_to_skill.py ./my-plugin` |
 
 ## 发布流程
 
 | 脚本 | 功能 | 用法 |
 |---|---|---|
-| `build_release.py` | 发布构建（一键全流程） | `python3 scripts/build_release.py` |
-| `release_decision.py` | 发布决策（go/no-go） | `python3 scripts/release_decision.py` |
 
 ---
 
