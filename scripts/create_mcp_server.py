@@ -135,7 +135,20 @@ def _ts_param_list(names: list) -> str:
 def generate_typescript_server(name: str, definition: dict, transport: str) -> str:
     tools, resources, prompts = definition["tools"], definition["resources"], definition["prompts"]
     lines = ['/**', f' * MCP Server: {name}', ' * 由 create_mcp_server.py 自动生成',
-             ' * 基于官方 @modelcontextprotocol/sdk', ' */', '',
+             ' * 基于官方 @modelcontextprotocol/sdk',
+             ' *',
+             ' * 安全基线（对齐 OWASP MCP Security Cheat Sheet）:',
+             ' * 1. 认证: 生产环境必须要求认证，禁止匿名访问',
+             ' * 2. 传输安全: 远程 MCP 必须使用 HTTPS/TLS',
+             ' * 3. 输入验证: 所有工具参数必须验证类型和范围',
+             ' * 4. 超时设置: 所有外部调用必须设置超时',
+             ' * 5. 日志规范: 日志输出到 stderr，stdout 只用于 JSON-RPC',
+             ' * 6. 敏感数据: 禁止在日志或响应中打印密钥/密码',
+             ' * 7. 错误处理: 捕获所有异常，返回通用错误信息',
+             ' * 8. 工具确认: 高风险操作必须要求用户确认',
+             ' * 9. 供应链: 依赖包版本锁定，定期更新',
+             ' * 10. 审计: 记录所有工具调用用于审计',
+             ' */', '',
              'import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";']
     if transport == "stdio":
         lines.append('import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";')
@@ -151,9 +164,20 @@ def generate_typescript_server(name: str, definition: dict, transport: str) -> s
         for tool in tools:
             tname, tdesc = tool["name"], tool["description"]
             params = normalize_params(tool)
+            risk = classify_tool_risk(tname)
             pnames = list(params.keys())
             pdest = ", ".join(pnames) if pnames else ""
-            lines += [f'server.tool(', f'  "{tname}",', f'  "{tdesc}",', '  {']
+            lines += ['  /*',
+                      f'   * 安全标注:',
+                      f'   * - 风险等级: {risk["risk_level"]}',
+                      f'   * - 有副作用: {risk["side_effect"]}',
+                      f'   * - 需要用户确认: {risk["requires_confirmation"]}',
+                      f'   * - {risk["advice"]}',
+                      '   */',
+                      f'server.tool(',
+                      f'  "{tname}",',
+                      f'  "{tdesc}",',
+                      '  {']
             for pn, pd in params.items():
                 lines.append(f'    {pn}: {ts_type(pd)},')
             lines += ['  },', f'  async ({{ {pdest} }}) => {{',
@@ -234,9 +258,102 @@ def safe_py_name(name: str) -> str:
     return safe
 
 
+# ============================================================
+# 工具风险自动分类（基于 OWASP MCP 安全标准）
+# ============================================================
+
+# 只读工具前缀（无副作用）
+READONLY_PREFIXES = (
+    "get_", "list_", "read_", "search_", "query_", "fetch_",
+    "find_", "lookup_", "describe_", "explain_", "check_", "is_",
+)
+
+# 写操作前缀（有副作用，需用户确认）
+WRITE_PREFIXES = (
+    "create_", "update_", "delete_", "remove_", "send_", "post_",
+    "put_", "patch_", "upload_", "download_", "execute_", "run_",
+    "start_", "stop_", "restart_", "deploy_", "install_", "uninstall_",
+)
+
+# 高风险/破坏性前缀（必须 HITL）
+DESTRUCTIVE_PREFIXES = (
+    "delete_", "remove_", "drop_", "destroy_", "wipe_", "purge_",
+    "reset_", "format_", "shutdown_", "kill_", "terminate_",
+)
+
+
+def classify_tool_risk(tool_name: str) -> dict:
+    """根据工具名自动分类风险等级。
+
+    返回:
+        {
+            "risk_level": "read-only" | "reversible-write" | "irreversible-write" | "destructive-admin",
+            "side_effect": bool,
+            "requires_confirmation": bool,
+            "classification": str,  # validate_tool_contract.py 认可的值
+            "advice": str,          # 安全建议
+        }
+    """
+    name = tool_name.lower()
+
+    # 破坏性操作
+    if any(name.startswith(p) for p in DESTRUCTIVE_PREFIXES):
+        return {
+            "risk_level": "destructive-admin",
+            "side_effect": True,
+            "requires_confirmation": True,
+            "classification": "destructive-admin",
+            "advice": "破坏性操作：必须要求用户显式确认，记录审计日志，实现幂等性",
+        }
+
+    # 写操作
+    if any(name.startswith(p) for p in WRITE_PREFIXES):
+        return {
+            "risk_level": "irreversible-write",
+            "side_effect": True,
+            "requires_confirmation": True,
+            "classification": "irreversible-write",
+            "advice": "写操作：建议要求用户确认，实现错误回滚机制",
+        }
+
+    # 只读操作
+    if any(name.startswith(p) for p in READONLY_PREFIXES):
+        return {
+            "risk_level": "read-only",
+            "side_effect": False,
+            "requires_confirmation": False,
+            "classification": "read-only",
+            "advice": "只读操作：无副作用，可自动执行",
+        }
+
+    # 未知分类，默认中风险
+    return {
+        "risk_level": "reversible-write",
+        "side_effect": True,
+        "requires_confirmation": True,
+        "classification": "reversible-write",
+        "advice": "未识别操作类型：建议人工确认风险等级，默认要求用户确认",
+    }
+
+
 def generate_python_server(name: str, definition: dict, transport: str) -> str:
     tools, resources, prompts = definition["tools"], definition["resources"], definition["prompts"]
     lines = ['"""', f'MCP Server: {name}', '由 create_mcp_server.py 自动生成', '基于官方 FastMCP', '"""', '',
+             '# ============================================================',
+             '# 安全基线（对齐 OWASP MCP Security Cheat Sheet）',
+             '# ============================================================',
+             '# 1. 认证: 生产环境必须要求认证，禁止匿名访问',
+             '# 2. 传输安全: 远程 MCP 必须使用 HTTPS/TLS',
+             '# 3. 输入验证: 所有工具参数必须验证类型和范围',
+             '# 4. 超时设置: 所有外部调用必须设置超时',
+             '# 5. 日志规范: 日志输出到 stderr，stdout 只用于 JSON-RPC',
+             '# 6. 敏感数据: 禁止在日志或响应中打印密钥/密码',
+             '# 7. 错误处理: 捕获所有异常，返回通用错误信息',
+             '# 8. 工具确认: 高风险操作必须要求用户确认',
+             '# 9. 供应链: 依赖包版本锁定，定期更新',
+             '# 10. 审计: 记录所有工具调用用于审计',
+             '# ============================================================',
+             '',
              'import sys', 'from typing import Optional', '', 'from fastmcp import FastMCP', '',
              '# ============================================================', '# 服务器配置',
              '# ============================================================', '', f'mcp = FastMCP("{name}")', '']
@@ -249,10 +366,20 @@ def generate_python_server(name: str, definition: dict, transport: str) -> str:
             tname = safe_py_name(raw_name)
             tdesc = tool["description"]
             params = normalize_params(tool)
+            risk = classify_tool_risk(raw_name)
             sig = ", ".join([f"{safe_py_name(p)}: {py_type(d)}" for p, d in params.items()])
             # 如果安全函数名与原始名不同，显式指定工具名
             tool_decorator = f'@mcp.tool(name="{raw_name}")' if tname != raw_name else '@mcp.tool()'
-            lines += [tool_decorator, f'def {tname}({sig}) -> str:', f'    """{tdesc}"""',
+            lines += [tool_decorator, f'def {tname}({sig}) -> str:',
+                      f'    """{tdesc}',
+                      '',
+                      f'    安全标注:',
+                      f'    - 风险等级: {risk["risk_level"]}',
+                      f'    - 有副作用: {risk["side_effect"]}',
+                      f'    - 需要用户确认: {risk["requires_confirmation"]}',
+                      f'    - {risk["advice"]}',
+                      f'    - Strict Mode: 建议使用 Pydantic 模型并设置 extra="forbid" 防止额外属性注入',
+                      f'    """',
                       f'    # TODO: 实现工具 "{raw_name}" 的业务逻辑',
                       f'    return "Tool {raw_name} executed"', '']
 

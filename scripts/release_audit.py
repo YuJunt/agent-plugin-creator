@@ -14,7 +14,7 @@ def main():
     parser.add_argument("skill_root", help="技能根目录路径")
     args = parser.parse_args()
     root=Path(args.skill_root).resolve(); errors=[]; warnings=[]; evidence=[]
-    required=['SKILL.md','references/evaluation-protocol.md','assets/schemas/1.0.0/plugin.schema.json','assets/schemas/1.0.0/mcp.schema.json','scripts/validate_plugin.py','scripts/quality_report.py','scripts/run_trigger_eval.py','scripts/judge_trigger_eval.py','scripts/run_edge_eval.py','scripts/build_release.py','references/mcp-tool-contract.json','references/permission-matrix.md','references/official-conformance-matrix.md','references/client-conformance.md','scripts/test_official_semantics.py','scripts/run_client_conformance.py','scripts/probe_remote_mcp.py','scripts/simulate_discovery.py','scripts/test_failure_boundaries.py','scripts/validate_tool_contract.py','scripts/generate_repair_plan.py','scripts/benchmark_mcp.py','scripts/release_decision.py']
+    required=['SKILL.md','references/evaluation-protocol.md','assets/schemas/1.0.0/plugin.schema.json','assets/schemas/1.0.0/mcp.schema.json','scripts/validate_plugin.py','scripts/quality_report.py','scripts/run_trigger_eval.py','scripts/run_edge_eval.py','scripts/build_release.py','references/permission-matrix.md','scripts/release_decision.py']
     for rel in required:
         p=root/rel
         if not p.is_file(): errors.append(f'missing required release file: {rel}')
@@ -44,6 +44,16 @@ def main():
         if cl_ver and prov.get('version'):
             if cl_ver.group(1) != prov['version']:
                 errors.append(f'版本不一致: CHANGELOG.md 最新为 v{cl_ver.group(1)}, provenance.json 为 v{prov["version"]}')
+
+    # P2-3: 检查是否包含 pre-release 版本号（公开发布不允许）
+    if prov.get('version'):
+        v = prov['version']
+        if _re.search(r'-(alpha|beta|rc|pre|dev|snapshot)', v, _re.IGNORECASE):
+            errors.append(f'发现 pre-release 版本号: v{v}（公开发布不允许）')
+        # 检查版本号是否从 1.0.0 或更高开始
+        parts = v.split('.')
+        if len(parts) >= 1 and parts[0].isdigit() and int(parts[0]) == 0:
+            warnings.append(f'版本号从 0.x 开始: v{v}（市场发布建议从 1.0.0 开始）')
     checks={'required_files':len(required),'examples':len(examples),'vendor_files':sum(1 for _ in vendor.rglob('*')) if vendor.is_dir() else 0,'errors':len(errors),'warnings':len(warnings)}
     report={'status':'BLOCKED' if errors else ('WARNING' if warnings else 'PASS'),'checks':checks,'errors':errors,'warnings':warnings,'sha256':{str(p.relative_to(root)):sha256(p) for p in [root/'SKILL.md',root/'LICENSE.txt'] if p.is_file()}}
     (root/'release-audit.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')

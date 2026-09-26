@@ -11,5 +11,7 @@
   "homepage": "https://example.com/plugin-docs",
   "repository": "https://github.com/your-org/your-plugin",
   "license": "MIT",
-  "keywords": ["keyword1", "keyword2"]
+  "keywords": ["keyword1", "keyword2"],
+  "category": "developer-tools",
+  "tags": ["mcp", "skills"]
 }

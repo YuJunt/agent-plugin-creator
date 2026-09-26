@@ -97,31 +97,62 @@ class PluginError(Exception):
 
 
 def format_error(error_code: ErrorCode, detail: str = "", file: str = "", line: int = 0, as_json: bool = False) -> str:
-    """格式化错误信息
+    """格式化错误信息（三要素标准：Failure + Cause + Next Action）
 
-    标准格式:
-    [E1001] 无效参数: 详细描述
-      文件: path/to/file.py:10
-      建议: 检查命令行参数是否正确
+    文本格式（用户友好）:
+        ❌ [E1001] 无效参数
+        📍 原因: 详细描述
+        📁 位置: path/to/file.py:10
+        💡 下一步: 检查命令行参数是否正确
+
+    JSON 格式（机器友好）:
+        {
+          "code": 1001,
+          "severity": "error",
+          "failure": "无效参数",
+          "cause": "详细描述",
+          "next_action": "检查命令行参数是否正确",
+          ...
+        }
     """
+    severity = _get_severity(error_code.code)
+
     if as_json:
         return json.dumps({
             "code": error_code.code,
-            "error": error_code.message,
-            "detail": detail,
-            "suggestion": error_code.suggestion,
+            "severity": severity,
+            "failure": error_code.message,
+            "cause": detail,
+            "next_action": error_code.suggestion,
             "file": file,
             "line": line,
         }, ensure_ascii=False, indent=2)
 
-    lines = [f"[E{error_code.code}] {error_code.message}"]
+    icon = {"critical": "🚨", "error": "❌", "warning": "⚠️", "info": "ℹ️"}.get(severity, "❌")
+    lines = [f"{icon} [E{error_code.code}] {error_code.message}"]
     if detail:
-        lines[0] += f": {detail}"
+        lines.append(f"   原因: {detail}")
     if file:
         loc = f"{file}:{line}" if line else file
-        lines.append(f"  文件: {loc}")
-    lines.append(f"  建议: {error_code.suggestion}")
+        lines.append(f"   位置: {loc}")
+    lines.append(f"   下一步: {error_code.suggestion}")
+
+    # 内部错误附加 bug report URL
+    if error_code.code >= 9000:
+        lines.append(f"   报告: https://github.com/YuJunt/agent-plugin-creator/issues/new")
+
     return "\n".join(lines)
+
+
+def _get_severity(code: int) -> str:
+    """根据错误码判断严重性"""
+    if code >= 9000:
+        return "critical"
+    if 3000 <= code < 4000:
+        return "critical"  # 安全错误
+    if 6000 <= code < 7000:
+        return "error"  # 外部工具错误
+    return "error"
 
 
 def print_error(error_code: ErrorCode, detail: str = "", file: str = "", line: int = 0):

@@ -86,6 +86,46 @@ SENSITIVE_HEADERS = {
     "cookie", "set-cookie", "proxy-authorization",
 }
 
+# 工具描述投毒模式（Tool Poisoning）
+# 攻击者在工具描述中嵌入恶意指令，劫持 LLM 行为
+# 参考: OWASP MCP01-MCP03 模型层安全
+TOOL_POISONING_PATTERNS = [
+    # === 经典 Prompt Injection ===
+    (r"ignore\s+(?:all\s+)?(?:previous|prior|above|earlier)\s+(?:instructions?|prompts?|rules?)",
+     "工具描述包含'忽略之前指令'模式（典型 prompt injection）", "critical"),
+    (r"forget\s+(?:all\s+)?(?:previous|prior|your)\s+(?:instructions?|prompts?|rules?)",
+     "工具描述包含'忘记之前指令'模式（典型 prompt injection）", "critical"),
+    # === MCP01: 模型误绑定 ===
+    (r"you\s+(?:are\s+now|must\s+now|should\s+now)\s+(?:act|be|pretend)\s+",
+     "工具描述包含角色劫持模式（'你现在是...'）", "high"),
+    (r"new\s+(?:persona|identity|character|role)",
+     "工具描述包含新人格/身份模式（角色劫持）", "high"),
+    # === MCP02: 上下文欺骗 ===
+    (r"system\s*prompt|system\s*message|override\s*system",
+     "工具描述提及系统提示（可能试图覆盖系统指令）", "high"),
+    (r"^(?:system|developer|assistant)\s*:",
+     "工具输出伪装成系统/开发者/助手消息（上下文欺骗）", "critical"),
+    (r"new\s+instructions?\s*:|new\s+rules?\s*:",
+     "工具描述引入新指令（可能覆盖原有规则）", "high"),
+    # === MCP03: 提示状态操纵 ===
+    (r"do\s+(?:not|n't)\s+(?:tell|inform|mention)\s+(?:the\s+)?(?:user|human)",
+     "工具描述要求对用户隐瞒信息（可疑行为）", "high"),
+    (r"always\s+(?:run|execute|perform)\s+(?:this|the)\s+(?:without|no)\s+(?:asking|confirm)",
+     "工具描述要求自动执行无需确认（可能绕过 HITL）", "medium"),
+    (r"modify\s+(?:the\s+)?(?:conversation|history|context|state)",
+     "工具描述试图修改对话历史/上下文状态", "critical"),
+    # === MCP07: 隐蔽通道滥用 ===
+    (r"[​-‍]",
+     "工具描述包含 Unicode 零宽字符（隐蔽通道）", "high"),
+    (r"base64\.b64decode|decode\s*\(\s*['\"][A-Za-z0-9+/=]+",
+     "工具描述包含 base64 解码（可能隐藏指令）", "medium"),
+    # === 数据泄露 ===
+    (r"exfiltrat|steal|leak|send\s+(?:data|info|content)\s+to",
+     "工具描述包含数据泄露/窃取模式", "critical"),
+    (r"send\s+(?:the\s+)?(?:conversation|chat|messages?)\s+(?:to|via)\s+",
+     "工具描述试图发送对话内容到外部（数据泄露）", "critical"),
+]
+
 
 class AuditResult:
     def __init__(self):
@@ -171,6 +211,18 @@ def scan_code_file(file_path: Path, rel_path: str, result: AuditResult):
                 if stripped.startswith("#") or stripped.startswith("//"):
                     continue
                 result.add_issue(severity, "insecure_network", rel_path, i, message, line)
+
+    # 扫描工具描述投毒（Tool Poisoning）
+    # 只扫描 MCP 服务器文件中的工具描述/docstring
+    if "server" in rel_path.lower() or "mcp" in rel_path.lower():
+        for pattern, message, severity in TOOL_POISONING_PATTERNS:
+            for i, line in enumerate(lines, 1):
+                if re.search(pattern, line, re.IGNORECASE):
+                    # 排除安全基线注释行
+                    stripped = line.strip()
+                    if stripped.startswith("#") or stripped.startswith("//") or stripped.startswith("*"):
+                        continue
+                    result.add_issue(severity, "tool_poisoning", rel_path, i, message, line)
 
 
 def audit_mcp_json(mcp_path: Path, rel_path: str, result: AuditResult):

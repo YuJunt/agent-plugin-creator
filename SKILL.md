@@ -3,8 +3,8 @@ name: agent-plugin-creator
 description: 创建符合 Agent Plugins 1.0.0 开放规范的可移植插件包，自包含官方 Agent Skills 创建能力和官方 MCP SDK 服务器创建能力，不依赖目标平台已有这些工具。当用户需要创建、打包、验证或迁移 Agent Plugin（将 Agent Skills 和/或 MCP 服务器统一打包为跨客户端通用的插件目录）时使用。触发场景包括：从零创建 agent 插件、把现有 skill 或 MCP 服务器打包成插件、为 VS Code / Cursor / GitHub Copilot / OpenAI Codex / Kiro 等兼容客户端制作可移植插件、将厂商专属插件格式迁移到 Agent Plugins 标准格式、生成可运行的 MCP 服务器代码并打包进插件、插件安全审计、插件质量评估、插件文档生成。English triggers, create agent plugin, package MCP server, build portable plugin, migrate plugin format, plugin security audit, plugin quality evaluation, generate MCP server code, cross-client plugin compatibility.
 ---
 
-> **版本**: v1.6.0（正式版） | **规范**: Agent Plugins 1.0.0（稳定）+ 1.1.0（working draft，校验器已识别）
-> **最后更新**: 2026-09-25
+> **版本**: v1.7.0（正式版） | **规范**: Agent Plugins 1.0.0（稳定）+ 1.1.0（working draft，校验器已识别）
+> **最后更新**: 2026-09-26
 
 > **规范版本说明**: 1.0.0 是当前发布版，新生成的插件默认使用 1.0.0 schema URL。1.1.0 已发布为 working draft（实质规则与 1.0.0 一致，仅版本号变化），`validate_plugin.py` 同时接受两个版本的 `$schema` URL，并会检测 plugin.json 与 mcp.json 之间的版本不一致。官方仓库: github.com/agentplugins/agent-plugins-spec。
 
@@ -22,6 +22,13 @@ description: 创建符合 Agent Plugins 1.0.0 开放规范的可移植插件包�
 - `official/mcp-builder/` — 官方 MCP 服务器创建四阶段工作流
 
 > **双轨制**：官方资源作为权威指导层，自包含 Python 脚本作为可执行层，确保跨平台可移植性。需要深入参考时再查阅 `official/` 下的文档。
+
+> **⚠️ MCP 2026-07-28 新规范弃用警告**：以下三个功能在 MCP 2026-07-28 规范中已被弃用，新生成的服务器**不再包含**这些功能：
+> - **Roots（根目录）** → 替代方案：用工具参数、资源 URI 或服务器配置
+> - **Sampling（采样）** → 替代方案：直接集成 LLM 提供商 API
+> - **Logging（日志）** → 替代方案：stdio 用 stderr，结构化观测用 OpenTelemetry
+>
+> 如需从旧版 MCP v1 迁移到 v2（无状态模式），使用官方 codemod：`npx @modelcontextprotocol/codemod@beta v1-to-v2 .`
 
 ## 触发路由与安全预检（不可跳过）
 
@@ -287,6 +294,8 @@ python3 <skill_dir>/scripts/wizard.py --config config.json --dry-run
 发布前跑 `scripts/release_audit.py`。详细的 8 大门禁规则见 `references/quality-gates.md`，权限控制矩阵见 `references/permission-matrix.md`。版本号管理规范（三层版本号体系 + SemVer 迭代标准 + 产出物版本标注）见 `references/versioning.md`。
 
 **MCP 握手门禁（必做）**：生成或修改 MCP 服务器代码后，必须用 `scripts/test_mcp_handshake.py` 实际启动服务器并完成握手。未通过握手的 MCP 服务器只能标记为"结构样例"。
+
+> **双时代协议支持**：test_mcp_handshake.py 同时支持旧版（2024-11-05，有状态握手）和新版（2026-07-28，无状态模式）协议。默认 `--mode auto` 自动检测，先试旧版握手，失败则自动切换新版无状态模式。也可以用 `--mode legacy` 或 `--mode stateless` 强制指定。
 
 评估用例在 `evals/evals.json`，执行脚本：`run_trigger_eval.py`、`run_selection_eval.py`、`run_edge_eval.py`（纯关键词匹配，无外部依赖）。
 

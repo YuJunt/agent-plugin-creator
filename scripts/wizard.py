@@ -219,6 +219,8 @@ def generate_plugin(config: dict, output_dir: Path, dry_run: bool = False) -> li
         "version": config["version"],
         "description": config["description"],
         "author": config.get("author", {}),
+        "homepage": config.get("homepage", ""),
+        "repository": config.get("repository", ""),
         "license": config.get("license", "MIT"),
         "keywords": config.get("keywords", []),
         "extensions": {
@@ -230,6 +232,11 @@ def generate_plugin(config: dict, output_dir: Path, dry_run: bool = False) -> li
             }
         }
     }
+    # 移除空字符串字段（保持 JSON 干净）
+    if not plugin_json["homepage"]:
+        del plugin_json["homepage"]
+    if not plugin_json["repository"]:
+        del plugin_json["repository"]
     add_file("plugin.json", json.dumps(plugin_json, indent=2, ensure_ascii=False) + "\n")
 
     # 2. 生成 skills
@@ -513,6 +520,8 @@ def normalize_config(config: dict) -> dict:
     config.setdefault("version", "0.1.0")
     config.setdefault("description", "")
     config.setdefault("author", {})
+    config.setdefault("homepage", "")
+    config.setdefault("repository", "")
     config.setdefault("license", "MIT")
     config.setdefault("keywords", [])
     components = config.setdefault("components", {})
