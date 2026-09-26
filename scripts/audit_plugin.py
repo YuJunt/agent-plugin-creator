@@ -112,7 +112,7 @@ TOOL_POISONING_PATTERNS = [
      "工具描述要求对用户隐瞒信息（可疑行为）", "high"),
     (r"always\s+(?:run|execute|perform)\s+(?:this|the)\s+(?:without|no)\s+(?:asking|confirm)",
      "工具描述要求自动执行无需确认（可能绕过 HITL）", "medium"),
-    (r"modify\s+(?:the\s+)?(?:conversation|history|context|state)",
+    (r"modify\s+(?:the\s+)?(?:conversation|history|context|memory|chat)",
      "工具描述试图修改对话历史/上下文状态", "critical"),
     # === MCP07: 隐蔽通道滥用 ===
     (r"[​-‍]",
@@ -161,7 +161,7 @@ DOCUMENT_PROMPT_INJECTION_PATTERNS = [
     # === 系统提示覆盖（中英文）===
     (r"system\s*prompt|system\s*message|override\s*system|developer\s*message",
      "文档提及系统提示（可能试图覆盖系统指令）", "high"),
-    (r"系统提示|系统消息|开发者提示|覆盖系统|重置系统",
+    (r"(?:覆盖|忽略|重置|绕过|无视|不遵守)(?:所有|之前|上述)?(?:系统提示|系统消息|开发者提示|系统指令)",
      "文档包含中文系统提示覆盖模式", "high"),
     (r"^(?:system|developer|assistant|human|user)\s*:",
      "文档伪装成系统/开发者/助手消息（上下文欺骗）", "critical"),
