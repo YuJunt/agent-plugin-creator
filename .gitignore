@@ -53,3 +53,9 @@ quality.json
 __pycache__/
 .pytest_cache/
 *.pyc
+
+# 覆盖率文件
+.coverage
+coverage.xml
+htmlcov/
+.pytest_cache/
