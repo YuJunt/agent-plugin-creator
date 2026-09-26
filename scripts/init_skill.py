@@ -22,11 +22,28 @@ import subprocess
 import sys
 from pathlib import Path
 
+# 导入共享模板生成器
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from skill_template import generate_skill_md_template
+
 # agentskills.io 官方 name 规范: 小写字母+数字+连字符, 1-64字符, 不以连字符开头/结尾, 无连续连字符
 NAME_PATTERN = re.compile(r"^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$")
 
 EXAMPLE_SCRIPT_CONTENT = '''#!/usr/bin/env python3
-"""示例脚本 - 根据需要修改或删除。
+"""TODO - 替换为实际功能描述
+
+> **AI 生成指南（生成后删除此部分）**
+>
+> 生成此模板后，AI 必须根据用户需求自动生成完整脚本，不要留 TODO：
+>
+> 1. 功能实现：根据用户需求，实现实际业务逻辑
+> 2. 错误处理：所有边界情况都要有错误处理
+> 3. 命令行参数：用 argparse，不要交互式提示
+> 4. 输出格式：输出要友好，用户能直接看懂
+> 5. 依赖说明：顶部 docstring 说明依赖
+>
+> 质量标准：所有参数有 help、错误有提示和退出码、输出友好
+> 示例代码见 references/script-example.md
 
 技能脚本应:
 - 自包含或清楚记录依赖
@@ -39,17 +56,63 @@ import sys
 
 
 def main():
-    parser = argparse.ArgumentParser(description="示例脚本")
-    parser.add_argument("--input", help="输入文件路径")
+    parser = argparse.ArgumentParser(
+        description="TODO - 替换为实际功能",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+示例:
+  python3 script.py --param "test"
+  python3 script.py --param ""  # 会报错
+""",
+    )
+    parser.add_argument("--param", required=True, help="TODO - 参数说明（必填）")
     args = parser.parse_args()
 
+    # 错误处理：检查参数
+    if not args.param.strip():
+        print("错误: 参数不能为空", file=sys.stderr)
+        print("提示: 请提供有效的参数值", file=sys.stderr)
+        return 1
+
     # TODO: 实现实际逻辑
-    print(f"处理中: {args.input or '(无输入)'}")
+    print(f"处理中: {args.param}")
     return 0
 
 
 if __name__ == "__main__":
     sys.exit(main())
+'''
+
+SCRIPT_EXAMPLE_CONTENT = '''# 脚本示例（天气查询）
+
+```python
+#!/usr/bin/env python3
+"""天气查询脚本 - 查询指定城市的实时天气
+依赖: 无（使用模拟数据）
+"""
+import argparse
+
+WEATHER_DATA = {
+    "北京": {"temp": 25, "condition": "多云", "humidity": 60},
+    "上海": {"temp": 28, "condition": "晴", "humidity": 70},
+}
+
+def main():
+    parser = argparse.ArgumentParser(description="天气查询")
+    parser.add_argument("--city", required=True, help="城市名称")
+    args = parser.parse_args()
+
+    if args.city in WEATHER_DATA:
+        w = WEATHER_DATA[args.city]
+        print(f"{args.city}: {w['temp']}°C, {w['condition']}, 湿度 {w['humidity']}%")
+    else:
+        print(f"错误: 不支持的城市: {args.city}")
+        print(f"支持的城市: {', '.join(WEATHER_DATA.keys())}")
+        return 1
+
+if __name__ == "__main__":
+    main()
+```
 '''
 
 REFERENCE_CONTENT = """# 参考文档
@@ -104,71 +167,30 @@ def create_skill(name: str, output_path: str, force: bool = False, lang: str = "
 
     # 创建 SKILL.md（默认英文模板，--lang zh 使用中文模板）
     if lang == "zh":
-        skill_md_content = f"""---
-name: {name}
-description: 描述这个 skill 做什么，以及什么时候应该使用它。包含具体的触发场景和关键词。（1-1024字符）
----
-
-# {title}
-
-## 概述
-简要说明这个 skill 的用途和它解决的问题。
-
-## 工作流程
-按步骤描述执行流程：
-
-1. 第一步做什么
-2. 第二步做什么
-3. 第三步做什么
-
-## 关键规则
-- 规则一
-- 规则二
-
-## 边界情况与 Gotchas
-- 列出违背合理假设的环境特定事实
-- 这些通常是 skill 中价值最高的内容
-
-## 参考资源
-- 详细文档参见 references/ 目录
-- 可执行脚本参见 scripts/ 目录
-"""
+        skill_md_content = generate_skill_md_template(
+            name=name,
+            description="",
+            lang="zh",
+            title=title
+        )
     else:
-        skill_md_content = f"""---
-name: {name}
-description: Replace with a clear description of what this skill does AND when it should be triggered. Include specific use cases and trigger keywords. (1-1024 chars)
----
-
-# {title}
-
-## Overview
-Briefly describe what this skill does and what problem it solves.
-
-## Workflow
-Describe the execution flow step by step:
-
-1. First step
-2. Second step
-3. Third step
-
-## Key Rules
-- Rule one
-- Rule two
-
-## Gotchas
-- List environment-specific facts that violate reasonable assumptions
-- These are often the most valuable content in a skill
-
-## Bundled Resources
-- Detailed documentation: see `references/` directory
-- Executable scripts: see `scripts/` directory
-"""
+        skill_md_content = generate_skill_md_template(
+            name=name,
+            description="",
+            lang="en",
+            title=title
+        )
     (skill_dir / "SKILL.md").write_text(skill_md_content, encoding="utf-8")
 
     # 创建示例脚本
     example_script = skill_dir / "scripts" / "example.py"
     example_script.write_text(EXAMPLE_SCRIPT_CONTENT, encoding="utf-8")
     os.chmod(example_script, 0o755)
+
+    # 创建脚本示例文档
+    (skill_dir / "references" / "script-example.md").write_text(
+        SCRIPT_EXAMPLE_CONTENT, encoding="utf-8"
+    )
 
     # 创建示例参考
     (skill_dir / "references" / "REFERENCE.md").write_text(REFERENCE_CONTENT, encoding="utf-8")
@@ -243,11 +265,23 @@ def main():
     print(f"  ├── references/       # 参考文档（示例可删除）")
     print(f"  └── assets/           # 静态资源（按需添加）")
     print()
-    print("下一步:")
-    print(f"  1. 编辑 {args.name}/SKILL.md 的 description 字段（描述做什么+什么时候用）")
-    print(f"  2. 编写 SKILL.md body 的工作流和 gotchas")
-    print(f"  3. 删除不需要的示例文件，添加实际需要的脚本和参考")
-    print(f"  4. 运行 validate_skill.py 验证规范符合性")
+    print()
+    print("=" * 60)
+    print("✅ Skill 创建成功！接下来怎么做：")
+    print("=" * 60)
+    print()
+    print("1. 【填充内容】编辑 SKILL.md，根据 AI 填充指南写实际内容")
+    print(f"   文件: {args.name}/SKILL.md")
+    print()
+    print("2. 【写脚本】删除 example.py，写实际功能脚本")
+    print(f"   目录: {args.name}/scripts/")
+    print()
+    print("3. 【验证】运行验证，检查是否符合规范")
+    print(f"   命令: python3 scripts/validate_skill.py {args.name}")
+    print()
+    print("4. 【打包】如果是完整插件，运行打包命令")
+    print(f"   命令: python3 scripts/plugin.py package .")
+    print()
 
 
 if __name__ == "__main__":

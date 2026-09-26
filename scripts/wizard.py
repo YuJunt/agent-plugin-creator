@@ -245,30 +245,12 @@ def generate_plugin(config: dict, output_dir: Path, dry_run: bool = False) -> li
         skill_desc = skill["description"]
         title = skill_name.replace("-", " ").title()
 
-        skill_md = f"""---
-name: {skill_name}
-description: {skill_desc}
----
-
-# {title}
-
-## 概述
-{skill_desc}
-
-## 工作流程
-1. 第一步
-2. 第二步
-3. 第三步
-
-## 关键规则
-- 规则一
-- 规则二
-
-## 参考资源
-- 详细文档参见 references/ 目录（超过100行的文件请在开头加目录）
-- 可执行脚本参见 scripts/ 目录
-- 输出模板参见 assets/ 目录
-"""
+        skill_md = generate_skill_md_template(
+            name=skill_name,
+            description=skill_desc,
+            lang="zh",
+            title=title
+        )
         add_file(f"skills/{skill_name}/SKILL.md", skill_md)
         add_file(f"skills/{skill_name}/scripts/.gitkeep", "")
         add_file(f"skills/{skill_name}/references/.gitkeep", "")

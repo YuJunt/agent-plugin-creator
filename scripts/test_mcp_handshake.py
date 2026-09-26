@@ -125,6 +125,27 @@ def _try_stateless_handshake(proc, results: dict, timeout: int) -> bool:
     return False
 
 
+def _collect_stderr(proc, max_lines: int = 20) -> str:
+    """收集服务器的 stderr 输出（用于诊断崩溃原因）"""
+    try:
+        # 非阻塞读取 stderr
+        import select
+        stderr_lines = []
+        while True:
+            ready, _, _ = select.select([proc.stderr], [], [], 0.1)
+            if not ready:
+                break
+            line = proc.stderr.readline()
+            if not line:
+                break
+            stderr_lines.append(line.strip())
+            if len(stderr_lines) >= max_lines:
+                break
+        return "\n".join(stderr_lines)
+    except Exception:
+        return ""
+
+
 def test_handshake(command: str, timeout: int = 10, check_resources: bool = True,
                    check_prompts: bool = True, cwd: str = None, mode: str = "auto") -> dict:
     """执行 MCP 握手测试（自动检测协议版本）
@@ -145,6 +166,13 @@ def test_handshake(command: str, timeout: int = 10, check_resources: bool = True
         "resources": [],
         "prompts": [],
         "errors": [],
+        "diagnostics": {
+            "command": command,
+            "cwd": cwd,
+            "exit_code": None,
+            "stderr": "",
+            "suggestions": [],
+        },
     }
 
     cmd_parts = shlex.split(command)
@@ -157,14 +185,27 @@ def test_handshake(command: str, timeout: int = 10, check_resources: bool = True
 
     proc = None
     try:
-        proc = start_server()
+        try:
+            proc = start_server()
+        except FileNotFoundError as e:
+            results["errors"].append(f"命令不存在: {e}")
+            results["diagnostics"]["suggestions"].append("检查命令路径是否正确，或使用 --cwd 指定工作目录")
+            return results
+        except Exception as e:
+            results["errors"].append(f"无法启动服务器: {e}")
+            results["diagnostics"]["suggestions"].append("检查命令格式，确保使用单个可执行 token + args")
+            return results
 
         if mode == "auto":
             legacy_ok = _try_legacy_handshake(proc, results, timeout)
             if legacy_ok:
                 results["protocol_mode"] = "legacy (2024-11-05)"
             else:
-                # 旧版失败，重启进程试新版
+                # 旧版失败，收集 stderr 诊断信息
+                stderr = _collect_stderr(proc)
+                if stderr:
+                    results["diagnostics"]["stderr"] = stderr
+                # 重启进程试新版
                 proc.terminate()
                 try:
                     proc.wait(timeout=3)
@@ -224,12 +265,40 @@ def test_handshake(command: str, timeout: int = 10, check_resources: bool = True
                 results["prompts_list"]["details"] = str(resp.get("_error", resp))
 
     finally:
-        if proc and proc.poll() is None:
-            proc.terminate()
-            try:
-                proc.wait(timeout=3)
-            except subprocess.TimeoutExpired:
-                proc.kill()
+        if proc:
+            # 收集退出码和 stderr（用于诊断）
+            if proc.poll() is not None:
+                results["diagnostics"]["exit_code"] = proc.returncode
+            # 收集剩余的 stderr
+            remaining_stderr = _collect_stderr(proc, max_lines=30)
+            if remaining_stderr and not results["diagnostics"]["stderr"]:
+                results["diagnostics"]["stderr"] = remaining_stderr
+            elif remaining_stderr:
+                results["diagnostics"]["stderr"] += "\n" + remaining_stderr
+            
+            # 终止进程
+            if proc.poll() is None:
+                proc.terminate()
+                try:
+                    proc.wait(timeout=3)
+                except subprocess.TimeoutExpired:
+                    proc.kill()
+            
+            # 生成诊断建议
+            if not results["tools_list"]["passed"]:
+                diag = results["diagnostics"]
+                if diag["exit_code"] is not None and diag["exit_code"] != 0:
+                    diag["suggestions"].append(f"服务器异常退出（退出码: {diag['exit_code']}），检查 stderr 输出")
+                if "No module named" in diag["stderr"]:
+                    diag["suggestions"].append("缺少 Python 依赖，运行: pip install fastmcp")
+                if "command not found" in diag["stderr"] or "No such file" in diag["stderr"]:
+                    diag["suggestions"].append("命令路径错误，检查 --command 参数")
+                if "Address already in use" in diag["stderr"]:
+                    diag["suggestions"].append("端口被占用，更换端口或关闭占用进程")
+                if not diag["stderr"] and diag["exit_code"] is None:
+                    diag["suggestions"].append("服务器无响应，可能是超时或死锁，增加 --timeout")
+                if not diag["suggestions"]:
+                    diag["suggestions"].append("检查服务器代码是否有语法错误，或直接运行命令查看输出")
 
     return results
 
@@ -274,6 +343,26 @@ def print_results(results: dict):
         print(f"\n❌ 错误 ({len(results['errors'])}):")
         for e in results["errors"]:
             print(f"   - {e}")
+
+    # 诊断信息（仅在失败时显示）
+    if not all_passed and "diagnostics" in results:
+        diag = results["diagnostics"]
+        print("\n" + "=" * 60)
+        print("🔍 诊断信息")
+        print("=" * 60)
+        print(f"   命令: {diag.get('command', 'N/A')}")
+        if diag.get("cwd"):
+            print(f"   工作目录: {diag['cwd']}")
+        if diag.get("exit_code") is not None:
+            print(f"   退出码: {diag['exit_code']}")
+        if diag.get("stderr"):
+            print(f"\n   stderr 输出（最后 30 行）:")
+            for line in diag["stderr"].split("\n")[:30]:
+                print(f"   | {line}")
+        if diag.get("suggestions"):
+            print(f"\n   💡 排查建议:")
+            for i, s in enumerate(diag["suggestions"], 1):
+                print(f"   {i}. {s}")
 
     print("\n" + "=" * 60)
     if all_passed:

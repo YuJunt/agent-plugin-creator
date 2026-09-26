@@ -203,6 +203,27 @@ def generate_wrapper_skill_md(plugin: dict, skills: list, mcp_servers: list, ski
         lines.append("然后通过 stdio（JSON-RPC）或 HTTP 与服务器通信调用工具。")
         lines.append("")
 
+    # 触发场景
+    lines.append("## 触发场景")
+    lines.append("")
+    lines.append("### ✅ 应该触发")
+    lines.append("")
+    trigger_examples = []
+    if skills:
+        for skill in skills:
+            trigger_examples.append(f"- 用户需要 {skill['name']} 相关功能")
+    if mcp_servers:
+        for server in mcp_servers:
+            trigger_examples.append(f"- 用户需要调用 {server['name']} MCP 工具")
+    for ex in trigger_examples:
+        lines.append(ex)
+    lines.append("")
+    lines.append("### ❌ 不应该触发")
+    lines.append("")
+    lines.append("- 用户只是问概念性问题，不需要实际执行")
+    lines.append("- 任务可以用更简单的方式完成，不需要启动整个插件")
+    lines.append("")
+
     # 使用指南
     lines.append("## 使用指南")
     lines.append("")
@@ -272,12 +293,31 @@ def generate_wrapper_skill_md(plugin: dict, skills: list, mcp_servers: list, ski
     # Gotchas section
     lines.append("## Gotchas（踩过的坑）")
     lines.append("")
-    lines.append("1. **子技能需要主动读取**——平台不会自动发现子技能，必须由 AI 主动读取对应子技能的 SKILL.md 才能使用其能力。")
-    lines.append("2. **MCP 服务器需要手动启动**——平台不会自动启动 MCP 服务器，必须运行 `scripts/start_mcp.py` 手动启动，使用完毕后确保关闭进程。")
+    lines.append("### 坑 1：子技能需要主动读取")
+    lines.append("- **症状**：AI 以为子技能会被自动发现，直接调用但找不到，或返回错误")
+    lines.append("- **修正**：必须由 AI 主动读取对应子技能的 SKILL.md 完整内容，然后按其步骤执行")
+    lines.append("- **原因**：封装版没有平台自动加载机制，子技能是普通文件，需要 AI 手动读取")
+    lines.append("")
+    lines.append("### 坑 2：MCP 服务器需要手动启动")
+    lines.append("- **症状**：AI 尝试调用 MCP 工具但失败，或提示连接不上")
+    lines.append("- **修正**：必须先运行 `scripts/start_mcp.py --server <名称>` 手动启动服务器，使用完毕后关闭进程")
+    lines.append("- **原因**：封装版没有平台自动启动 MCP 的机制，需要 AI 手动管理进程生命周期")
+    lines.append("")
     if mcp_servers:
-        lines.append("3. **stdio 服务器不要打印到 stdout**——stdout 是 JSON-RPC 通道，打印调试信息会破坏协议，调试信息必须打到 stderr（对齐 official/mcp-builder 最佳实践）。")
-    lines.append("4. **客户端扩展不可用**——原生插件的 .cursor/、.claude-plugin/ 等客户端专属扩展在封装版中不生效，已被排除。")
-    lines.append("5. **MCP 服务器和工具命名遵循官方规范**——Python 服务器用 `{service}_mcp`，Node 用 `{service}-mcp-server`，工具用 snake_case 加服务前缀（详见 official/mcp-builder/reference/mcp_best_practices.md）。")
+        lines.append("### 坑 3：stdio 服务器不要打印到 stdout")
+        lines.append("- **症状**：MCP 服务器启动后握手失败，或工具调用返回乱码/错误 JSON")
+        lines.append("- **修正**：调试信息必须打到 stderr，stdout 只用于 JSON-RPC 通信")
+        lines.append("- **原因**：stdio 传输中 stdout 是严格的 JSON-RPC 通道，任何额外输出都会破坏协议解析")
+        lines.append("")
+    lines.append("### 坑 4：客户端扩展不可用")
+    lines.append("- **症状**：AI 尝试使用 hooks、commands 等客户端扩展，但找不到或不生效")
+    lines.append("- **修正**：不要依赖客户端扩展，只使用 skills 和 MCP 服务器的核心能力")
+    lines.append("- **原因**：封装版是跨平台的，客户端专属扩展（.cursor/、.claude-plugin/ 等）不被通用 Skill 格式支持")
+    lines.append("")
+    lines.append("### 坑 5：MCP 命名遵循官方规范")
+    lines.append("- **症状**：生成的 MCP 工具命名不规范，或不同服务器的工具名冲突")
+    lines.append("- **修正**：Python 服务器用 `{service}_mcp`，Node 用 `{service}-mcp-server`，工具用 snake_case 加服务前缀")
+    lines.append("- **原因**：官方规范要求命名一致性，避免工具名冲突，详见 official/mcp-builder/reference/mcp_best_practices.md")
     lines.append("")
 
     return "\n".join(lines) + "\n"

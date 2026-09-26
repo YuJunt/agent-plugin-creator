@@ -11,8 +11,8 @@ Plugin 冒烟测试脚本
   5. 没有硬编码密钥
 
 用法:
-    python3 scripts/smoke_test.py --plugin ./my-plugin
-    python3 scripts/smoke_test.py --plugin ./my-plugin --json
+    python3 scripts/smoke_test.py ./my-plugin
+    python3 scripts/smoke_test.py ./my-plugin --json
 """
 import argparse
 import json
@@ -139,11 +139,11 @@ def smoke_test(plugin_dir: Path) -> dict:
 
 def main():
     parser = argparse.ArgumentParser(description="Plugin 冒烟测试")
-    parser.add_argument("--plugin", required=True, help="插件目录路径")
+    parser.add_argument("plugin_dir", help="插件目录路径")
     parser.add_argument("--json", action="store_true", help="JSON 格式输出")
     args = parser.parse_args()
 
-    plugin_dir = Path(args.plugin).resolve()
+    plugin_dir = Path(args.plugin_dir).resolve()
     if not plugin_dir.exists():
         print(f"错误: 插件目录不存在: {plugin_dir}", file=sys.stderr)
         sys.exit(1)

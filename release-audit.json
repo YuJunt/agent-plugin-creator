@@ -1,7 +1,7 @@
 {
   "status": "PASS",
   "checks": {
-    "required_files": 11,
+    "required_files": 9,
     "examples": 6,
     "vendor_files": 37,
     "errors": 0,
@@ -10,7 +10,7 @@
   "errors": [],
   "warnings": [],
   "sha256": {
-    "SKILL.md": "47e2027804a1d9bae9e3959dad8627a07f4d4e4ef19dbb17d579ef688534c2d5",
+    "SKILL.md": "5017a3a6e3e1c99808d1efe80c14005817370876b8508385c11c60850c718ec3",
     "LICENSE.txt": "2acd3d7fe15659b8d647a2106cc48c2cc51c2c1f4735b430639e4b39186268d5"
   }
 }
