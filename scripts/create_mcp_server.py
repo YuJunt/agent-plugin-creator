@@ -256,7 +256,8 @@ def generate_python_server(name: str, definition: dict, transport: str) -> str:
         lines += ['# ============================================================', '# 资源注册 (Resources)',
                   '# ============================================================', '']
         for res in resources:
-            lines += [f'@mcp.resource("{res["uri"]}")', f'def {res["name"]}() -> str:',
+            rname = safe_py_name(res["name"])
+            lines += [f'@mcp.resource("{res["uri"]}")', f'def {rname}() -> str:',
                       f'    """{res.get("description", "")}"""',
                       f'    # TODO: 实现资源 "{res["name"]}" 的读取逻辑',
                       f'    return "Resource {res["name"]} content"', '']
@@ -265,13 +266,13 @@ def generate_python_server(name: str, definition: dict, transport: str) -> str:
         lines += ['# ============================================================', '# 提示模板注册 (Prompts)',
                   '# ============================================================', '']
         for prompt in prompts:
-            pname = prompt["name"]
+            pname = safe_py_name(prompt["name"])
             pargs = prompt.get("arguments", [])
             sig = ", ".join([f"{safe_py_name(a['name'])}: str" for a in pargs])
             lines += [f'@mcp.prompt()', f'def {pname}({sig}) -> str:',
                       f'    """{prompt.get("description", "")}"""',
-                      f'    # TODO: 实现提示模板 "{pname}"',
-                      f'    return "Prompt {pname}"', '']
+                      f'    # TODO: 实现提示模板 "{prompt["name"]}"',
+                      f'    return "Prompt {prompt["name"]}"', '']
 
     lines += ['# ============================================================', '# 启动服务器',
               '# ============================================================', '', 'def main():']
