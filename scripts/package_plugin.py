@@ -40,7 +40,7 @@ def calculate_file_hash(file_path: Path, algorithm: str = "sha256") -> str:
 
 def collect_plugin_files(plugin_dir: Path) -> list:
     """收集插件中的所有文件（排除缓存、临时文件等）"""
-    exclude_dirs = {"__pycache__", ".git", "node_modules", ".DS_Store", "dist", "build"}
+    exclude_dirs = {"__pycache__", ".git", "node_modules", ".DS_Store", "dist", "build", "tests", "htmlcov", ".pytest_cache", ".github", "docs"}
     exclude_extensions = {".pyc", ".pyo", ".swp", ".swo", "~"}
 
     files = []
