@@ -89,6 +89,53 @@
 | 国际化框架 | `scripts/i18n_helper.py` | 多语言支持+翻译提取 |
 | 插件健康诊断 | `scripts/health_check.py` | 4维度加权评分+体检 |
 
+### P0/P1/P2 脚本常用参数速查
+
+> 以下为最常用的参数和示例，完整参数用 `--help` 查看。
+
+#### P0 工程效率
+
+| 脚本 | 关键参数 | 示例 |
+|------|---------|------|
+| `test_mcp_tools.py` | `--command` `--args` `--timeout` `--skip-tools` `--json` | `python3 test_mcp_tools.py --command python3 --args server.py --timeout 10` |
+| `update_plugin.py` | `plugin_dir` `--bump-version {patch,minor,major}` `--add-skill` `--remove-skill` `--add-mcp-tool` `--force` | `python3 update_plugin.py ./my-plugin --bump-version minor --force` |
+| `reverse_engineer.py` | `server_dir` `--output` `--name` `--force` | `python3 reverse_engineer.py ./existing-server --output ./my-plugin --name my-plugin` |
+| `score_plugin.py` | `plugin_dir` `--json` `--threshold` | `python3 score_plugin.py ./my-plugin --threshold 80` |
+| `manage_deps.py` | `server_dir` `--check` `--generate` `--language {python,typescript,auto}` `--name` | `python3 manage_deps.py ./servers/api --check` |
+| `auto_fix.py` | `plugin_dir` `--max-attempts` `--dry-run` `--force` | `python3 auto_fix.py ./my-plugin --max-attempts 3` |
+| `build_all.py` | `--config` `--output` `--name` `--clients` `--skip-tests` `--skip-audit` `--json` | `python3 build_all.py --config config.json --output ./dist --name my-plugin` |
+| `progress.py` | （作为模块导入使用） | `from progress import ProgressBar` |
+| `export_config.py` | `plugin_dir` `--output` `--format {json,yaml}` | `python3 export_config.py ./my-plugin --output config.json` |
+
+#### P1 质量与生态
+
+| 脚本 | 关键参数 | 示例 |
+|------|---------|------|
+| `check_coverage.py` | `--threshold` `--output` `--json` | `python3 check_coverage.py --threshold 60` |
+| `fuzz_test.py` | `--target` `--iterations` `--output` `--seed` | `python3 fuzz_test.py --target validate_plugin --iterations 50` |
+| `benchmark_monitor.py` | `--baseline` `--compare` `--output` `--threshold` | `python3 benchmark_monitor.py --baseline` |
+| `errors.py` | `--list` `--lookup CODE` `--category CAT` `--json` | `python3 errors.py --list` |
+| `dockerize.py` | `plugin_dir` `--output` `--server` `--port` `--all` `--force` | `python3 dockerize.py ./my-plugin --output ./docker --all --force` |
+| `publish_config.py` | `server_dir` `--type {pypi,npm}` `--output` `--version` `--github-actions` `--force` | `python3 publish_config.py ./servers/api --type pypi --version 1.0.0` |
+| `vscode_extension.py` | `plugin_dir` `--output` `--publisher` `--force` | `python3 vscode_extension.py ./my-plugin --output ./vscode-ext --force` |
+| `mcp_marketplace.py` | `plugin_dir` `--output` `--category` `--tags` `--force` | `python3 mcp_marketplace.py ./my-plugin --output marketplace.json` |
+| `type_check.py` | `--strict` `--output` `--threshold` `--json` | `python3 type_check.py --strict --threshold 70` |
+
+#### P2 安全与高级
+
+| 脚本 | 关键参数 | 示例 |
+|------|---------|------|
+| `supply_chain_scan.py` | `plugin_dir` `--severity {low,medium,high,critical}` `--output` `--json` | `python3 supply_chain_scan.py ./my-plugin --severity high` |
+| `generate_sbom.py` | `plugin_dir` `--format {cyclonedx,spdx,both}` `--output` `--force` | `python3 generate_sbom.py ./my-plugin --format both --output sbom.json` |
+| `sign_plugin.py` | `plugin_dir` `--sign` `--verify` `--key` `--output` | `python3 sign_plugin.py ./my-plugin --sign --key my-secret` |
+| `analyze_plugin.py` | `plugin_dir` `--output` `--json` `--depth {quick,deep}` | `python3 analyze_plugin.py ./my-plugin --depth deep` |
+| `combine_plugins.py` | `plugin1 plugin2 ...` `--output` `--name` `--version` `--force` `--json` | `python3 combine_plugins.py ./p1 ./p2 --output ./combined --name super-plugin` |
+| `migrate_version.py` | `plugin_dir` `--to {1.0.0,1.1.0}` `--dry-run` `--force` | `python3 migrate_version.py ./my-plugin --to 1.1.0` |
+| `eval_driven_dev.py` | `generate-evals\|run\|report` `--plugin` `--evals` `--output` | `python3 eval_driven_dev.py run --plugin ./my-plugin --evals evals.json` |
+| `best_practices.py` | `list\|check\|apply` `--plugin` `--category` `--json` | `python3 best_practices.py check --plugin ./my-plugin` |
+| `i18n_helper.py` | `init\|extract\|validate` `--plugin` `--locales` `--output` | `python3 i18n_helper.py init --plugin ./my-plugin --locales en,zh,ja` |
+| `health_check.py` | `plugin_dir` `--output` `--json` `--threshold` | `python3 health_check.py ./my-plugin --threshold 80` |
+
 ## 关键规则速查
 
 | 规则 | 说明 |

@@ -210,17 +210,22 @@ def main():
     parser = argparse.ArgumentParser(description="Agent Plugin Creator 触发评估器（基于规则）")
     parser.add_argument("--skill", default=str(ROOT), help="技能目录路径")
     parser.add_argument("--output", help="输出 JSON 结果文件路径")
+    parser.add_argument("--json", action="store_true", help="以 JSON 格式输出到 stdout（不打印文本报告）")
     args = parser.parse_args()
     skill_dir = Path(args.skill).resolve()
     if not skill_dir.exists():
         print(f"错误: 技能目录不存在: {skill_dir}", file=sys.stderr)
         sys.exit(1)
     report = evaluate_skill(skill_dir)
-    print_report(report)
+    if args.json:
+        print(json.dumps(report, ensure_ascii=False, indent=2))
+    else:
+        print_report(report)
     if args.output:
         output_path = Path(args.output).resolve()
         output_path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-        print(f"\n结果已保存到: {output_path}")
+        if not args.json:
+            print(f"\n结果已保存到: {output_path}")
     sys.exit(0 if report["accuracy"] >= 0.8 else 1)
 
 

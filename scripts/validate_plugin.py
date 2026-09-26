@@ -56,11 +56,38 @@ ALLOWED_PLUGIN_FIELDS = {
 # author 对象允许的字段
 ALLOWED_AUTHOR_FIELDS = {"name", "email", "url"}
 
-# Agent Plugins plugin name 规范（允许点）
+# Agent Plugins plugin name 规范（允许点，仅 ASCII — 包名/目录名兼容性）
 PLUGIN_NAME_PATTERN = re.compile(r"^(?!.*(?:--|\.\.))[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?$")
 
-# agentskills.io skill name 规范（不允许点）
-SKILL_NAME_PATTERN = re.compile(r"^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$")
+# agentskills.io skill name 规范（不允许点，支持 Unicode 字母 — 与 validate_skill.py 对齐）
+import unicodedata as _unicodedata
+
+def validate_skill_name(name: str) -> tuple[bool, str]:
+    """验证 skill name 是否符合 agentskills.io 规范（支持 Unicode 字母）。
+
+    与 validate_skill.py 的 _validate_name_official 逻辑一致：
+    - NFKC 规范化
+    - 非空、<=64 字符
+    - 全小写
+    - 不以连字符开头/结尾，无连续连字符
+    - 仅 Unicode 字母数字 + 连字符
+    """
+    if not name or not isinstance(name, str) or not name.strip():
+        return False, "name must be a non-empty string"
+    name = _unicodedata.normalize("NFKC", name.strip())
+    if len(name) > 64:
+        return False, f"name exceeds 64 character limit ({len(name)} chars)"
+    if name != name.lower():
+        return False, f"name '{name}' must be lowercase"
+    if name.startswith("-") or name.endswith("-"):
+        return False, "name cannot start or end with a hyphen"
+    if "--" in name:
+        return False, "name cannot contain consecutive hyphens"
+    if "." in name:
+        return False, "skill name cannot contain dots (use hyphens)"
+    if not all(c.isalnum() or c == "-" for c in name):
+        return False, f"name '{name}' contains invalid characters (only Unicode letters, digits, and hyphens)"
+    return True, ""
 
 # MCP 传输类型
 MCP_TRANSPORTS = {"stdio", "streamable-http", "sse"}
@@ -200,14 +227,14 @@ def validate_skill_frontmatter(skill_dir: Path, result: ValidationResult):
         else:
             if len(sname) > 64:
                 result.error(f"skills/{skill_dir.name}: name 超过 64 字符")
-            if not SKILL_NAME_PATTERN.match(sname):
+            valid, reason = validate_skill_name(sname)
+            if not valid:
                 result.error(
                     f"skills/{skill_dir.name}: name 不符合 agentskills.io 官方规范\n"
                     f"   值: '{sname}'\n"
-                    f"   规则: 小写字母+数字+连字符（不允许点），不以连字符开头/结尾，无连续连字符"
+                    f"   原因: {reason}\n"
+                    f"   规则: Unicode 小写字母+数字+连字符（不允许点），不以连字符开头/结尾，无连续连字符"
                 )
-            if "--" in sname:
-                result.error(f"skills/{skill_dir.name}: name 不能包含连续连字符 (--)")
             if sname != skill_dir.name:
                 result.error(
                     f"skills/{skill_dir.name}: SKILL.md 的 name 与目录名不一致\n"
