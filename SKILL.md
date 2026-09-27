@@ -26,6 +26,25 @@ ROUTE class=<positive|implicit|near-miss|adversarial|migration>; plugin=<true|fa
 
 创建符合 Agent Plugins 1.0.0 规范的可移植插件包，自包含官方 Skill 创建和 MCP 服务器创建能力，不依赖目标平台。支持从零创建、打包、验证、审计、迁移插件。
 
+## 📚 渐进式披露索引（按需加载，不要一次性全读）
+
+> **核心原则：只在需要时才读对应文档，避免上下文浪费。**
+
+| 当你要做什么 | 读哪个文档 |
+|---|---|
+| 从零创建插件 | `references/workflows.md`（5步完整指南） |
+| 创建 MCP 服务器 | `references/mcp-server-guide.md`（完整开发指南） |
+| 不确定插件/Skill 格式 | `references/plugin-specification.md` / `agent-skills-spec.md` |
+| 触发路由分类/高级功能 | `references/advanced.md`（路由映射+LLM失败模式） |
+| 发布前质量检查 | `references/quality.md`（三层检查清单+评估协议） |
+| 遇到错误/故障排除 | `references/cheatsheet.md`（9类常见错误+8个脚本故障排除） |
+
+**LLM 执行纪律：**
+1. 必须按工作流顺序执行，不可跳步
+2. 每步执行后必须验证结果，不可假设成功
+3. 遇到错误必须先查 `references/cheatsheet.md`，不可自行猜测
+4. 发布前必须跑完整验证链（`plugin.py test`），不可跳过
+
 ## 快速开始
 
 > **🚀 快速开始（第一次用？看这里）**
@@ -252,12 +271,23 @@ python3 <skill_dir>/scripts/wizard.py --config config.json --dry-run
 | mcp.json command 报错 | command 是单个可执行文件，参数放 `args` 数组 |
 
 ### 坑 1：MCP 服务器写完再验，结果全是错
-生成后立即跑 `test_mcp_handshake.py`，不要写完直接打包。
+- **症状**：生成 MCP 服务器后直接打包，发布后发现握手失败、工具不能调用
+- **修正**：生成后立即跑 `test_mcp_handshake.py`，通过后再打包
+- **原因**：MCP 协议对 stdio/stdout 有严格要求，微小错误（如打印调试信息到 stdout）会导致整个协议失效，必须尽早验证
 
 ### 坑 2：stdio 服务器打印调试信息到 stdout
-stdout 是 JSON-RPC 协议通道，调试信息必须打到 stderr。
+- **症状**：MCP 握手超时或失败，服务器看起来启动正常但无响应
+- **修正**：stdout 是 JSON-RPC 协议通道，调试信息必须打到 stderr
+- **原因**：stdio 传输中，stdout 的任何非 JSON 输出都会破坏协议解析，导致客户端无法理解响应
 
 ### 坑 3：wizard 生成的骨架直接当成品用
-骨架不是成品，必须重写 SKILL.md、填充 Gotchas、跑完整验证。
+- **症状**：用 wizard.py 生成插件后直接发布，结果质量低、有 TODO 占位符、验证不通过
+- **修正**：骨架只是起点，必须重写 SKILL.md、填充 Gotchas、跑完整验证链
+- **原因**：wizard 生成的是通用模板，不包含具体业务逻辑和领域知识，直接发布等于发布半成品
+
+### 坑 4：LLM 跳过验证直接打包
+- **症状**：用 `--skip-verify` 跳过验证，发布后发现插件有结构错误或安全问题
+- **修正**：不要用 `--skip-verify`，必须通过 `plugin.py test` 三级门禁后再发布
+- **原因**：验证链是最后一道防线，跳过验证等于把有问题的代码直接发布给用户
 
 更多坑见 `references/cheatsheet.md` 和 `references/advanced.md`。
