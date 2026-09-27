@@ -44,11 +44,6 @@ ROUTE class=<positive|implicit|near-miss|adversarial|migration>; plugin=<true|fa
 >
 > **📖 完整教程：** 参见 `references/workflows.md`（从零创建插件的 5 步指南）
 
-创建符合 [Agent Plugins 1.0.0](https://github.com/agentplugins/agent-plugins-spec) 规范的可移植插件包。本技能**自包含**两大官方创建能力，不依赖运行平台已有的工具：
-
-1. **官方 Agent Skills 创建能力** — 基于 [agentskills.io](https://agentskills.io) 官方规范，内嵌 skill 脚手架生成和验证；验证规则对齐官方 `skills-ref` 工具
-2. **官方 MCP 服务器创建能力** — 基于官方 TypeScript SDK（`@modelcontextprotocol/sdk`）和 Python FastMCP，内嵌服务器代码生成和握手验证
-
 ## 内置官方权威资源
 
 本技能完整内置了 Anthropic 官方的两个创建技能作为权威参考，存放在 `official/` 目录：
@@ -113,59 +108,15 @@ plugin.py release-audit # 发布前审计
 
 ## 触发路由（编排器大脑）
 
-> **详细路由规则和映射表见 `references/advanced.md`**
->
-> **核心原则：路由不只是分类，而是构建完整执行计划——决定加载什么上下文、用什么门禁、走什么路径、输出什么格式。**
+> **详细路由规则、分类映射表、置信度/风险分级、上下文加载映射见 `references/advanced.md`**
 
-### 路由决策流程（5 步）
+**核心原则：路由不只是分类，而是构建完整执行计划——决定加载什么上下文、用什么门禁、走什么路径、输出什么格式。**
 
-```
-用户请求 → 意图分析 → 上下文感知 → 分类+置信度+风险 → 构建执行计划 → 透明通信 → 执行
-```
+**5 种分类**：`positive`（明确创建插件）→ 直接走完整流程 / `implicit`（隐含需要）→ 先确认再创建 / `near-miss`（只做窄范围任务）→ 不创建插件 / `adversarial`（危险请求）→ 拒绝并给替代方案 / `migration`（格式迁移）→ 用 client_adapter。
 
-### 路由分类
+**置信度**：≥80% 直接执行 / 60-80% 先确认 / <60% 问澄清。**风险分级**：🟢低（只读）standard 自动执行 / 🟡中（创建打包）strict 执行前告知 / 🔴高（覆盖删除发布）critical 必须用户确认。
 
-| 分类 | 识别特征 | 执行路径 |
-|---|---|---|
-| `positive` | 明确说"创建插件"、"打包"、"生成 MCP" | 直接走完整创建工作流 |
-| `implicit` | 说"把这个 skill 分发出去"、"做个可移植的包" | 先确认需求，再走创建工作流 |
-| `near-miss` | 只说"验证这个 skill"、"检查安全" | 只做对应窄范围任务，不创建插件 |
-| `adversarial` | 要求写 API key、绕过权限、塞非便携组件 | 拒绝，给出安全替代方案 |
-| `migration` | 说"从 Claude 插件迁移"、"转成标准格式" | 走迁移路径，用 client_adapter |
-
-### 置信度 + 风险分级
-
-**置信度：** ≥80% 直接执行 / 60-80% 先确认 / <60% 问澄清问题
-
-**风险分级（决定门禁级别）：**
-
-| 风险 | 操作类型 | 门禁 | 处理方式 |
-|---|---|---|---|
-| 🟢 低 | 只读：验证、审计、查看、评分 | standard | 自动执行 |
-| 🟡 中 | 有副作用但可逆：创建、打包 | strict | 执行前告知 |
-| 🔴 高 | 不可逆：覆盖、删除、公开发布 | critical | 必须用户确认 |
-
-### 构建执行计划（路由驱动一切）
-
-路由结果决定：
-- **上下文加载**：只加载相关 references（避免注意力稀释）
-- **门禁级别**：根据风险选择 standard/strict/critical
-- **Gotchas 展示**：只展示相关的坑
-- **输出格式**：简洁/步骤化/报告
-
-> **详细映射表见 `references/advanced.md`**（5 种场景的 references 加载、4 种场景的 Gotchas 展示、4 种输出格式）
-
-### 透明通信（路由决策可观测性）
-
-执行前输出路由决策轨迹：
-
-```
-🔀 路由决策
-意图：创建插件（含 Skill + MCP）
-分类：positive | 置信度：90% | 风险：🟡中 | 门禁：strict
-上下文：workflows.md + mcp-server-guide.md + cheatsheet.md
-预计：5 步
-```
+路由结果决定：上下文加载（只加载相关 references）、门禁级别、Gotchas 展示（只展示相关的坑）、输出格式。执行前必须输出路由决策轨迹（分类+置信度+风险+门禁+预计步骤），让用户可观测。
 
 危险请求（必须拒绝）：写 API key / 绕过权限 / 把非便携组件塞进核心
 
