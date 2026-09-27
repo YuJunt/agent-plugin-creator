@@ -257,7 +257,9 @@ def skill_to_plugin(skill_dir: Path, output_dir: Path, name: str = "",
             shutil.copy2(item, dest)
             files_copied += 1
 
-    result["files_copied"] = files_copied
+    # 统计实际复制的文件数（递归统计，而不是只统计顶层项目）
+    actual_files_copied = sum(1 for _ in skills_dir.rglob("*") if _.is_file())
+    result["files_copied"] = actual_files_copied
 
     # 6.5 可选：自动净化（替换硬编码密钥为环境变量引用）
     if sanitize:
