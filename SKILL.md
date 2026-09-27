@@ -7,6 +7,21 @@ description: 创建符合 Agent Plugins 1.0.0 开放规范的可移植插件包�
 > **规范版本说明**: 1.0.0 是当前发布版，新生成的插件默认使用 1.0.0 schema URL。1.1.0 已发布为 working draft（实质规则与 1.0.0 一致，仅版本号变化），`validate_plugin.py` 同时接受两个版本的 `$schema` URL，并会检测 plugin.json 与 mcp.json 之间的版本不一致。官方仓库: github.com/agentplugins/agent-plugins-spec。
 
 # Agent Plugin Creator
+
+## ⚠️ 使用本技能的强制门禁（必须遵守）
+
+**使用本技能的标志 = 输出 ROUTE 记录。** 不输出 ROUTE 就等于没使用本技能。
+
+每次使用本技能，**必须在任何解释、规划、代码输出之前**，先单独输出一行：
+
+```
+ROUTE class=<positive|implicit|near-miss|adversarial|migration>; plugin=<true|false>; skill=<true|false>; mcp=<true|false>; reason=<一句话说明>
+```
+
+然后输出执行计划（使用哪些功能、按什么顺序），让用户清楚知道你在用本技能做什么。
+
+**分类规则和详细路由见下方「触发路由」章节。** 本门禁不可跳过。
+
 ## 概述
 
 创建符合 Agent Plugins 1.0.0 规范的可移植插件包，自包含官方 Skill 创建和 MCP 服务器创建能力，不依赖目标平台。支持从零创建、打包、验证、审计、迁移插件。
