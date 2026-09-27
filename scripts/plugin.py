@@ -419,9 +419,10 @@ def main():
     p_package = subparsers.add_parser("package", help="打包发布（自动先跑验证链，支持三级门禁）")
     p_package.add_argument("plugin", nargs="?", help="插件目录路径（默认当前目录）")
     p_package.add_argument("--output", default="./dist", help="输出目录")
-    p_package.add_argument("--gate", choices=["standard", "strict", "critical"], default="standard",
-                           help="门禁级别：standard（标准，日常开发）/ strict（严格，发布前）/ critical（关键，公开发布）")
-    p_package.add_argument("--skip-verify", action="store_true", help="跳过验证链（不推荐）")
+    p_package.add_argument("--gate", choices=["standard", "strict", "critical"], default="strict",
+                           help="门禁级别：standard（标准，日常开发）/ strict（严格，发布前，默认）/ critical（关键，公开发布）")
+    p_package.add_argument("--skip-verify", action="store_true",
+                           help="⚠️  危险：跳过验证链（可能发布有问题的插件，仅用于调试，不推荐）")
 
     # score - 自动质量评分（独立于 LLM）
     p_score = subparsers.add_parser("score", help="自动质量评分（脚本计算，LLM 不能改分）")
